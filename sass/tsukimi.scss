@@ -5,7 +5,7 @@
  * tsukimi.scss
  * Global Layout & Styles
  *
- * Copyright (c) 2014-2016 Jacob Hipps/Neo-Retro Group, Inc.
+ * Copyright (c) 2016 Jacob Hipps/Neo-Retro Group, Inc.
  * https://ycnrg.org/
  *
  * @author      Jacob Hipps - jacob@ycnrg.org
@@ -17,12 +17,36 @@
 @import "_ycutil.scss";
 @import "_transitions.scss";
 
+/*** Palette ***/
+$bg_grad_top:				#43484C;
+$bg_grad_bot:				#2C3033;
+$navbar_bg:					#BF6053;
+$navbar_nav_fg:				#FFFFFF;
+$navbar_nav_bg_active:		#FEB960;
+$navbar_nav_fg_active:		#101010;
+$subnav_bg:					#FEB960;
+$subnav_nav_fg:				#4A4A4A;
+$subnav_nav_fg_hover:		#4A4A4A;
+
+
+html {
+	min-height: 100%;
+}
+
+body {
+	background: linear-gradient($bg_grad_top, $bg_grad_bot);
+}
+
 .tsk-view {
 	overflow: hidden;
-	min-width: 600px;
-	min-height: 600px;
 	padding: 0px;
-	margin: 0px;
+
+	&.ng-leave-active {
+		/* this is necessary to prevent very annoying "jumping" of the
+		   view frame during transitions, since both the old and new views
+		   will be present simultaenously for a few hundred ms */
+		position: absolute;
+	}
 
 	&-overlay {
 		background-image: linear-gradient(rgba(10, 10, 10, 0.5), rgba(60, 60, 60, 0.8));
@@ -44,3 +68,91 @@
 	}
 }
 
+
+.tsk-navbar {
+	/* modifies bootstrap navbar */
+    background: $navbar_bg;
+    font-family: "Myriad Pro";
+
+    &-shadow {
+    	box-shadow: 0px 10px 11px 0px rgba(20, 20, 20, 0.35);
+    }
+
+	& .navbar-nav > .active > a,
+	& .navbar-nav > .active > a:hover,
+	& .navbar-nav > .active > a:active {
+		background-color: $navbar_nav_bg_active !important;
+		color: $navbar_nav_fg_active !important;
+	}
+
+	& .navbar-nav > li > a:hover {
+		color: $navbar_nav_fg !important;
+		background: linear-gradient($navbar_nav_bg_active, $navbar_nav_bg_active 8px, transparent 8px);
+	}
+
+	&-clearfix {
+		margin: 0;
+		padding: 0;
+		width: 100%;
+		height: 60px;
+		content: "";
+	}
+}
+
+.tsk-subnav {
+	overflow: hidden;
+	width: 100%;
+	height: 75px;
+	padding: 10px 40px;
+	background: $subnav_bg;
+	font-family: "Flyer LT Std";
+	font-size: 36px;
+	box-shadow: 0px 10px 11px 0px rgba(20, 20, 20, 0.35);
+
+	&-nav {
+		overflow: hidden;
+		float: left;
+		padding: 10px 25px;
+
+		&>a {
+			color: $subnav_nav_fg;
+			text-decoration: none;
+
+			&:hover {
+				color: $subnav_nav_fg_hover;
+				text-decoration: none;
+			}
+		}
+
+		&:hover {
+			background: linear-gradient(transparent,transparent 50px, $subnav_nav_fg_hover 50px, $subnav_nav_fg_hover 57px, transparent 57px);
+		}
+	}
+}
+
+.tks-pgc {
+	overflow: hidden;
+	margin-top: 20px;
+	padding: 5px 15px 15px 15px;
+}
+
+#page-about {
+	color: #f0f0f0;
+	text-shadow: 1px 1px rgba(32, 32, 32, 0.2);
+	margin-left: 40px;
+
+	&>h1 {
+		font-family: "Ryo Gothic PlusN";
+		font-size: 42px;
+		margin-left: -10px;
+	}
+
+	&>p {
+		font-family: "Myriad Pro";
+		font-size: 14px;
+	}
+
+	&>div {
+		margin-left: 15px;
+	}
+}

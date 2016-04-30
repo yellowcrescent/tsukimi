@@ -11,17 +11,18 @@
 </head>
 <body>
 
-<nav class="navbar navbar-default navbar-fixed-top">
+<nav class="tsk-navbar navbar navbar-default navbar-fixed-top">
   <div class="container-fluid">
     <div class="navbar-header">
-      tsukimi
+      <!-- tsukimi logo -->
     </div>
 
     <div class="collapse navbar-collapse" id="navbar-collapse-1">
       <ul class="nav navbar-nav">
-        <li class="active"><a href="#/">Watch</a></li>
-        <li><a href="#/library">Library</a></li>
-        <li><a href="#/settings">Settings</a></li>
+        <li id="nav-watch"><a href="/public/index.html#/">Watch</a></li>
+        <li id="nav-library"><a href="/public/index.html#/library">Library</a></li>
+        <li id="nav-settings"><a href="/public/index.html#/settings">Settings</a></li>
+        <li id="nav-about"><a href="/public/index.html#/about">About</a></li>
       </ul>
       <form class="navbar-form navbar-right" role="search">
         <div class="form-group">
@@ -32,11 +33,14 @@
   </div>
 </nav>
 
+<div class="tsk-navbar-clearfix"></div>
+
 <div class="tsk-view at-view-fade-in at-view-fade-out" ng-view>
 
 </div><!--//tsk-view -->
 
     <!-- scripts -->
+        <script src="public/bower_components/jquery/dist/jquery.min.js"></script>
         <script src="public/bower_components/angular/angular.min.js"></script>
         <script src="public/bower_components/angular-route/angular-route.min.js"></script>
         <script src="public/bower_components/angular-animate/angular-animate.min.js"></script>
