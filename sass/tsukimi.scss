@@ -1,0 +1,46 @@
+/**
+ ******************************************************************************
+ **%%vim: set modelines=15:
+ *
+ * tsukimi.scss
+ * Global Layout & Styles
+ *
+ * Copyright (c) 2014-2016 Jacob Hipps/Neo-Retro Group, Inc.
+ * https://ycnrg.org/
+ *
+ * @author      Jacob Hipps - jacob@ycnrg.org
+ * @license     MPLv2 <https://www.mozilla.org/en-US/MPL/2.0/>
+ * @param 		vim: set ts=4 sw=4 noexpandtab syntax=scss:
+ *
+ *****************************************************************************/
+
+@import "_ycutil.scss";
+@import "_transitions.scss";
+
+.tsk-view {
+	overflow: hidden;
+	min-width: 600px;
+	min-height: 600px;
+	padding: 0px;
+	margin: 0px;
+
+	&-overlay {
+		background-image: linear-gradient(rgba(10, 10, 10, 0.5), rgba(60, 60, 60, 0.8));
+		overflow: hidden;
+		width: 100%;
+		height: 100%;
+	}
+
+	&-left {
+		overflow: hidden;
+		float: left;
+		clear: left;
+	}
+
+	&-right {
+		overflow: hidden;
+		float: left;
+		padding: 20px 20px 20px 10px;
+	}
+}
+

@@ -1,0 +1,146 @@
+/**
+ ******************************************************************************
+ **%%vim: set modelines=15:
+ *
+ * _transitions.scss
+ * CSS3 Transitions
+ *
+ * Copyright (c) 2014-2016 Jacob Hipps/Neo-Retro Group, Inc.
+ * https://ycnrg.org/
+ *
+ * @author      Jacob Hipps - jacob@ycnrg.org
+ * @license     MPLv2 <https://www.mozilla.org/en-US/MPL/2.0/>
+ * @param 		vim: set ts=4 sw=4 noexpandtab syntax=scss:
+ *
+ *****************************************************************************/
+
+ .at-view-fade-in.ng-enter {
+    -webkit-transition-property: opacity;
+    -moz-transition-property: opacity;
+    -o-transition-property: opacity;
+    transition-property: opacity;
+    -webkit-transition-duration: 0.5s;
+    -moz-transition-duration: 0.5s;
+    -o-transition-duration: 0.5s;
+    transition-duration: 0.5s;
+    opacity: 0;
+}
+
+.at-view-fade-in.ng-enter-active {
+    opacity: 1;
+}
+
+.at-view-fade-out.ng-leave {
+    -webkit-transition-property: opacity;
+    -moz-transition-property: opacity;
+    -o-transition-property: opacity;
+    transition-property: opacity;
+    -webkit-transition-duration: 0.5s;
+    -moz-transition-duration: 0.5s;
+    -o-transition-duration: 0.5s;
+    transition-duration: 0.5s;
+    opacity: 1;
+}
+
+.at-view-fade-out.ng-leave-active {
+    opacity: 0;
+}
+
+.at-repeat-wave-in.ng-enter, .at-repeat-wave-out.ng-leave {
+    -webkit-transition-property: all;
+    -moz-transition-property: all;
+    -o-transition-property: all;
+    transition-property: all;
+    -webkit-transition-duration: 600ms;
+    -moz-transition-duration: 600ms;
+    -o-transition-duration: 600ms;
+    transition-duration: 600ms;
+    -webkit-transition-timing-function: cubic-bezier(0.26, 0.86, 0.44, 0.985);
+    -moz-transition-timing-function: cubic-bezier(0.26, 0.86, 0.44, 0.985);
+    -o-transition-timing-function: cubic-bezier(0.26, 0.86, 0.44, 0.985);
+    transition-timing-function: cubic-bezier(0.26, 0.86, 0.44, 0.985);
+}
+
+.at-repeat-wave-in.ng-enter, .at-repeat-wave-out.ng-leave {
+    -webkit-transition-property: all;
+    -moz-transition-property: all;
+    -o-transition-property: all;
+    transition-property: all;
+    -webkit-transition-duration: 600ms;
+    -moz-transition-duration: 600ms;
+    -o-transition-duration: 600ms;
+    transition-duration: 600ms;
+    -webkit-transition-timing-function: cubic-bezier(0.26, 0.86, 0.44, 0.985);
+    -moz-transition-timing-function: cubic-bezier(0.26, 0.86, 0.44, 0.985);
+    -o-transition-timing-function: cubic-bezier(0.26, 0.86, 0.44, 0.985);
+    transition-timing-function: cubic-bezier(0.26, 0.86, 0.44, 0.985);
+}
+
+.at-repeat-wave-out.ng-leave {
+    opacity: 1;
+}
+
+.at-repeat-wave-in.ng-enter {
+    -webkit-transform: translateX(-70%);
+    -moz-transform: translateX(-70%);
+    -ms-transform: translateX(-70%);
+    -o-transform: translateX(-70%);
+    transform: translateX(-70%);
+    opacity: 0;
+}
+
+.at-repeat-wave-out.ng-leave-active {
+    -webkit-transform: translateX(-70%);
+    -moz-transform: translateX(-70%);
+    -ms-transform: translateX(-70%);
+    -o-transform: translateX(-70%);
+    transform: translateX(-70%);
+    opacity: 0;
+}
+
+.at-repeat-wave-in.ng-enter-active {
+    -webkit-transform: translateX(0);
+    -moz-transform: translateX(0);
+    -ms-transform: translateX(0);
+    -o-transform: translateX(0);
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.at-repeat-fade-in.ng-enter, .at-repeat-fade-out.ng-leave {
+    -webkit-transition-property: opacity;
+    -moz-transition-property: opacity;
+    -o-transition-property: opacity;
+    transition-property: opacity;
+    -webkit-transition-duration: 300ms;
+    -moz-transition-duration: 300ms;
+    -o-transition-duration: 300ms;
+    transition-duration: 300ms;
+}
+
+.at-repeat-fade-in.ng-enter, .at-repeat-fade-out.ng-leave {
+    -webkit-transition-property: opacity;
+    -moz-transition-property: opacity;
+    -o-transition-property: opacity;
+    transition-property: opacity;
+    -webkit-transition-duration: 300ms;
+    -moz-transition-duration: 300ms;
+    -o-transition-duration: 300ms;
+    transition-duration: 300ms;
+}
+
+.at-repeat-fade-in.ng-enter {
+    opacity: 0;
+}
+
+.at-repeat-fade-in.ng-enter-active {
+    opacity: 1;
+}
+
+.at-repeat-fade-out.ng-leave {
+    opacity: 1;
+}
+
+.at-repeat-fade-out.ng-leave-active {
+    opacity: 0;
+}

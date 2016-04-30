@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html ng-app="tsukimi">
+<head>
+    <base href="/" />
+    <title>tsukimi</title>
+    <link rel="stylesheet" href="public/bower_components/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="public/theme/flatly.css" />
+    <link rel="stylesheet" href="public/bower_components/angular-motion/dist/angular-motion.min.css" />
+    <link rel="stylesheet" href="public/bower_components/angular-busy/dist/angular-busy.min.css" />
+    <link rel="stylesheet" href="public/css/tsukimi.css" />
+</head>
+<body>
+
+<nav class="navbar navbar-default navbar-fixed-top">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      tsukimi
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="#/">Watch</a></li>
+        <li><a href="#/library">Library</a></li>
+        <li><a href="#/settings">Settings</a></li>
+      </ul>
+      <form class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="search">
+        </div>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<div class="tsk-view at-view-fade-in at-view-fade-out" ng-view>
+
+</div><!--//tsk-view -->
+
+    <!-- scripts -->
+        <script src="public/bower_components/angular/angular.min.js"></script>
+        <script src="public/bower_components/angular-route/angular-route.min.js"></script>
+        <script src="public/bower_components/angular-animate/angular-animate.min.js"></script>
+        <script src="public/bower_components/angular-strap/dist/angular-strap.min.js"></script>
+        <script src="public/bower_components/angular-strap/dist/angular-strap.tpl.min.js"></script>
+        <script src="public/bower_components/angular-busy/dist/angular-busy.min.js"></script>
+        <script src="public/js/tsukimi_browser.js"></script>
+    <!--//scripts -->
+
+</body>
+</html>
