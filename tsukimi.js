@@ -14,10 +14,15 @@
  *
  *****************************************************************************/
 
+var settings = require("./settings");
 var pkgdata = require("./package");
+var db = require("./tsk_db");
 
 console.log("tsukimi core starting...");
 console.log("tsukimi v"+pkgdata.version+"\n"+pkgdata.author+"\n"+pkgdata.copyright);
+
+// Connect to Mongo
+db.connect(settings.mongo);
 
 
 function browserInit() {
@@ -30,3 +35,4 @@ function browserInit() {
  **/
 
 exports.browserInit		= browserInit;
+exports.db				= db;

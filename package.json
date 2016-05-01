@@ -1,6 +1,6 @@
 {
   "name": "tsukimi",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "tsukimi media browser",
   "main": "public/index.html",
   "node-main": "tsukimi.js",
@@ -29,6 +29,8 @@
     "frame": true,
     "width": 1200,
     "height": 780,
+    "min_width": 900,
+    "min_height": 720,
     "position": "mouse"
   },
   "webkit": {
@@ -38,5 +40,7 @@
     "type": "git",
     "url": "https://bitbucket.org/yellowcrescent/tsukimi"
   },
-  "dependencies": {}
+  "dependencies": {
+    "mongodb": "^2.1.18"
+  }
 }

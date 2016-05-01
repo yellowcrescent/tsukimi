@@ -20,4 +20,12 @@
 	</div>
 </div>
 
+<div id="recent-adds" class="tsk-epgroup">
+	<div class="tsk-epgroup-ep" ng-repeat="newep in recent_adds">
+		{{newep.metadata.series}}<br/>
+		{{newep.metadata.episode}}<br/>
+		{{newep.metadata.title}}<br/>
+	</div>
+</div>
+
 <!--//routes/watch_home-->

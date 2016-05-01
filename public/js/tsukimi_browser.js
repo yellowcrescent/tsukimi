@@ -38,6 +38,12 @@ function thispage() {
 
 function watchHomeController($scope, $location, $routeParams, $http) {
 	console.log("browseHomeController start");
+
+	// FIXME: get recently-added videos
+	tkcore.db.query_videos({}, function(err, rez) {
+		$scope.recent_adds = rez;
+	});
+
 }
 
 function libraryController($scope, $location, $routeParams, $http) {

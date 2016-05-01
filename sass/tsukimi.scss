@@ -191,3 +191,17 @@ body {
 		margin-left: 15px;
 	}
 }
+
+.tsk-epgroup {
+	margin: 30px 25px;
+	overflow: hidden;
+
+	&-ep {
+		overflow: hidden;
+		float: left;
+		background: rgba(128,128,128,0.5);
+		color: rgba(250,250,250,1.0);
+		font-family: "Myriad Pro";
+		font-size: 14px;
+	}
+}
