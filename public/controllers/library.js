@@ -287,9 +287,15 @@ function _lib_event_keydown(evt) {
 		} else if(evt.code == delkey && evt.shiftKey == false) {
 			// ignore selected
 			$scope.ignoreSelected();
+			// prevent default - required for Mac to prevent going 'back'
+			evt.preventDefault();
+			return false;
 		} else if(evt.code == delkey && evt.shiftKey == true) {
 			// delete selected
 			$scope.deleteSelected();
+			// prevent default - required for Mac to prevent going 'back'
+			evt.preventDefault();
+			return false;
 		}
 	}
 }
