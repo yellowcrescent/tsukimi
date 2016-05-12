@@ -29,7 +29,7 @@
       </ul>
       <form class="tsk-navbar-form navbar-left" role="search">
         <div class="form-group">
-          <input type="text" class="tsk-navbar-form-text" placeholder="search">
+          <input type="text" class="tsk-navbar-form-text" placeholder="search" id="searchbox" onfocus="$('#searchbox').addClass('focused')" onblur="$('#searchbox').removeClass('focused')" />
           <span class="tsk-navbar-form-addon">
             <span class="fa fa-search"></span>
           </span>
@@ -49,13 +49,11 @@
         <script src="/public/bower_components/jquery/dist/jquery.js"></script>
         <script src="/public/bower_components/jstree/dist/jstree.js"></script>
         <script src="/public/bower_components/split-pane/split-pane.js"></script>
-        <script src="/public/bower_components/requirejs/require.js"></script>
         <script src="/public/bower_components/angular/angular.js"></script>
         <script src="/public/bower_components/angular-route/angular-route.js"></script>
         <script src="/public/bower_components/angular-animate/angular-animate.js"></script>
         <script src="/public/bower_components/angular-strap/dist/angular-strap.js"></script>
         <script src="/public/bower_components/angular-strap/dist/angular-strap.tpl.js"></script>
-        <script src="/public/bower_components/angular-busy/dist/angular-busy.js"></script>
     <!--//scripts -->
 
     <!--controllers-->

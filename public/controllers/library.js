@@ -260,7 +260,7 @@ function _lib_event_keydown(evt) {
 		} else if(evt.code == "Escape") {
 			$scope.modal.hide();
 		}
-	} else if($scope.hasFocus == 'rport') {
+	} else if($scope.hasFocus == 'rport' && $('.focused').length == 1) {
 		var llen = $('.fentry').length;
 
 		if(evt.code == "ArrowDown" || evt.code == "ArrowUp") {

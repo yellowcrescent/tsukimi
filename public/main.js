@@ -25,7 +25,7 @@ var tkversion = tkcore.browserInit();
  * AngularJS bootstrap and dependency injection
  **/
 
-var tsukimi = angular.module('tsukimi', ['ngRoute', 'ngAnimate', 'mgcrea.ngStrap', 'cgBusy']);
+var tsukimi = angular.module('tsukimi', ['ngRoute', 'ngAnimate', 'mgcrea.ngStrap']);
 
 function thispage() {
 	return window.location.pathname + window.location.hash;
