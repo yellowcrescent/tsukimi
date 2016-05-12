@@ -1,0 +1,27 @@
+
+<div id="mdiag" class="modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true" ng-click="$hide()">&times;</button>
+        <h4 class="modal-title" ng-bind="title"></h4>
+      </div>
+      <div class="modal-body">
+
+      Ignoring a file will remove it from the database, and also create an
+      extended attribute so that the file is ignored in the future.
+      <div class="tsk-diag-info">
+        <div>
+          <i class="fa fa-info-circle fa-2x"></i>
+        </div>
+        To un-ignore a file, use <i>setfattr</i> or <i>xattr</i> to remove the <i>user.xbake.ignore</i> attribute.
+      </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="$hide()">Cancel</button>
+        <button type="button" class="btn btn-warning" ng-click="modal.confirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>

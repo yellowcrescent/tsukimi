@@ -50,11 +50,11 @@ function query_videos(qparams, _cbx) {
 }
 
 function get_video(qparams, _cbx) {
-	monjer.colleciton('videos').findOne(qparams, _cbx);
+	monjer.collection('videos').findOne(qparams, _cbx);
 }
 
 function get_video_byid(id, _cbx) {
-	monjer.colleciton('videos').findOne({ "_id": String(id) }, _cbx);
+	monjer.collection('videos').findOne({ "_id": String(id) }, _cbx);
 }
 
 function query_series(qparams, _cbx) {
@@ -62,11 +62,11 @@ function query_series(qparams, _cbx) {
 }
 
 function get_series(qparams, _cbx) {
-	monjer.colleciton('series').findOne(qparams, _cbx);
+	monjer.collection('series').findOne(qparams, _cbx);
 }
 
 function get_series_byid(id, _cbx) {
-	monjer.colleciton('series').findOne({ "_id": String(id) }, _cbx);
+	monjer.collection('series').findOne({ "_id": String(id) }, _cbx);
 }
 
 function query_episodes(qparams, _cbx) {
@@ -74,11 +74,45 @@ function query_episodes(qparams, _cbx) {
 }
 
 function get_episode(qparams, _cbx) {
-	monjer.colleciton('episodes').findOne(qparams, _cbx);
+	monjer.collection('episodes').findOne(qparams, _cbx);
 }
 
 function get_episode_byid(id, _cbx) {
-	monjer.colleciton('episodes').findOne({ "_id": String(id) }, _cbx);
+	monjer.collection('episodes').findOne({ "_id": String(id) }, _cbx);
+}
+
+function query_files(qparams, _cbx) {
+	monjer.collection('files').find(qparams).toArray(_cbx);
+}
+
+function get_file_groups(_cbx) {
+	// group/reduce by tdex_id (series)
+	var reducer = function(curr,result) {
+					result.series_id = curr.series_id;
+					result.count++;
+					if(curr.status == "new") result.new++;
+					if(curr.status == "complete") result.complete++;
+				  };
+
+	// run aggregation
+	monjer.collection('files').group({ tdex_id: 1 }, {}, { count: 0, new: 0, complete: 0 }, reducer, function(err,docs) {
+		_cbx(err,docs);
+	});
+}
+
+function get_series_data(_cbx) {
+	monjer.collection('series').find({}).toArray(function(err,docs) {
+		if(err) console.log("ERROR: Failed to retrieve series data: "+err);
+
+		// build assoc array of series
+		var slist = {};
+		for(si in docs) {
+			var tdoc = docs[si];
+			slist[tdoc['_id']] = tdoc;
+		}
+
+		_cbx(slist);
+	});
 }
 
 /**
@@ -96,3 +130,6 @@ exports.get_series_byid		= get_series_byid;
 exports.query_episodes		= query_episodes;
 exports.get_episode			= get_episode;
 exports.get_episode_byid	= get_episode_byid;
+exports.query_files			= query_files;
+exports.get_file_groups		= get_file_groups;
+exports.get_series_data		= get_series_data;

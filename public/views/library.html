@@ -1,0 +1,94 @@
+<!--routes/library-->
+<div id="subnav" class="tsk-subnav">
+	<button type="button" class="btn tsk-subnav-button" data-title="Add Selection" bs-tooltip>
+		<i class="fa fa-plus-square"></i>
+	</button>
+	<button type="button" class="btn tsk-subnav-button" data-title="Ignore" bs-tooltip ng-click="ignoreSelected()">
+		<i class="fa fa-minus-square"></i>
+	</button>
+	<button type="button" class="btn tsk-subnav-button" data-title="Delete" bs-tooltip ng-click="deleteSelected()">
+		<i class="fa fa-times-circle"></i>
+	</button>
+
+	<div class="tsk-subnav-vdiv"></div>
+
+	<button type="button" class="btn tsk-subnav-button" data-title="Open Local" bs-tooltip>
+		<i class="fa fa-folder-open-o"></i>
+	</button>
+	<button type="button" class="btn tsk-subnav-button" data-title="Run Import" bs-tooltip>
+		<i class="fa fa-bolt"></i>
+	</button>
+
+	<div class="tsk-subnav-vdiv"></div>
+
+	<button type="button" class="btn tsk-subnav-button" data-title="Framecap" bs-tooltip>
+		<i class="fa fa-picture-o"></i>
+	</button>
+	<button type="button" class="btn tsk-subnav-button" data-title="View Properties" bs-tooltip>
+		<i class="fa fa-commenting-o"></i>
+	</button>
+	<button type="button" class="btn tsk-subnav-button" data-title="Overrides" bs-tooltip>
+		<i class="fa fa-tags"></i>
+	</button>
+
+	<div class="tsk-subnav-vdiv"></div>
+
+	<button type="button" class="btn tsk-subnav-button" data-title="Configure Scrapers" bs-tooltip>
+		<i class="fa fa-wrench"></i>
+	</button>
+	<button type="button" class="btn tsk-subnav-button" data-title="Refresh" bs-tooltip>
+		<i class="fa fa-refresh"></i>
+	</button>
+</div>
+<div id="clientarea">
+	<div id="sidebar" class="tsk-sidebar" ng-click="setFocus('sidebar')">
+		<div id="lib-tree">
+		</div>
+	</div>
+	<div id="rport" class="tsk-rview" ng-click="setFocus('rport')">
+		<form name="ftab-selector">
+		<table class="tsk-ftab table">
+			<thead>
+				<tr>
+					<td>
+						<input title="Select All/None" type="checkbox" name="file-all" id="file-all" ng-click="flist_toggle_all($event)" />
+						Filename
+					</td>
+					<td>Resolution</td>
+					<td>Duration</td>
+				</tr>
+			</thead>
+			<tbody id="flist-tab">
+				<tr class="fentry" ng-repeat="tf in flist" ng-click="flist_select($event, tf._id)" id="row-{{tf._id}}">
+					<td>
+						<input type="checkbox" name="file-{{tf._id}}" id="file-{{tf._id}}" />
+						{{tf.location[tf.default_location].fpath.file}}
+					</td>
+					<td>{{tf.mediainfo.video[0].width}}x{{tf.mediainfo.video[0].height}} @ {{tf.mediainfo.video[0].frame_rate}}</td>
+					<td>{{tf.mediainfo.video[0].duration}} sec</td>
+				</tr>
+			</tbody>
+		</table>
+		</form>
+	</div>
+</div>
+
+<!--
+<div id="mdiag" class="modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true" ng-click="modal.action_close()">&times;</button>
+        <h4 class="modal-title">{{modal.title}}</h4>
+      </div>
+      <div class="modal-body" ng-bind-html="modal.body">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="modal.action_default()">{{modal.btn_default}}</button>
+        <button type="button" class="btn btn-primary" ng-click="modal.action_primary()">{{modal.btn_primary}}</button>
+      </div>
+    </div>
+  </div>
+</div>
+-->
+<!--//routes/library-->

@@ -24,10 +24,14 @@
     "angular-route": "^1.5.5",
     "angular-animate": "^1.5.5",
     "angular-strap": "^2.3.8",
-    "font-awesome": "^4.6.1"
+    "font-awesome": "^4.6.1",
+    "jstree": "^3.3.0",
+    "split-pane": "^0.8.0",
+    "jquery": "^2.2.3"
   },
   "resolutions": {
     "angular": "^1.5.5",
-    "angular-animate": "^1.5.5"
+    "angular-animate": "^1.5.5",
+    "jquery": "^2.2.3"
   }
 }

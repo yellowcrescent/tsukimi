@@ -27,60 +27,34 @@ var tkversion = tkcore.browserInit();
 
 var tsukimi = angular.module('tsukimi', ['ngRoute', 'ngAnimate', 'mgcrea.ngStrap', 'cgBusy']);
 
-
 function thispage() {
 	return window.location.pathname + window.location.hash;
 }
-
-/**
- * Controllers
- **/
-
-function watchHomeController($scope, $location, $routeParams, $http) {
-	console.log("browseHomeController start");
-
-	// FIXME: get recently-added videos
-	tkcore.db.query_videos({}, function(err, rez) {
-		$scope.recent_adds = rez;
-	});
-
-}
-
-function libraryController($scope, $location, $routeParams, $http) {
-	console.log("libraryController start");
-}
-
-function settingsController($scope, $location, $routeParams, $http) {
-	console.log("settingsController start");
-}
-
-function aboutController($scope, $location, $routeParams, $http) {
-	console.log("aboutController start");
-	$scope.version = tkversion;
-}
-
 
 /**
  * Routing configuration
  **/
 
 tsukimi.config(
-	function($routeProvider, $locationProvider) {
+	function($routeProvider, $locationProvider, $sceProvider) {
+		// disable SCE
+		$sceProvider.enabled(false);
+
 		$routeProvider
 			.when('/', {
-				templateUrl: 'public/routes/watch_home.html',
+				templateUrl: '/public/views/watch_home.html',
 				controller: watchHomeController
 			})
 			.when('/library', {
-				templateUrl: 'public/routes/library.html',
+				templateUrl: '/public/views/library.html',
 				controller: libraryController
 			})
 			.when('/settings', {
-				templateUrl: 'public/routes/settings.html',
+				templateUrl: '/public/views/settings.html',
 				controller: settingsController
 			})
 			.when('/about', {
-				templateUrl: 'public/routes/about.html',
+				templateUrl: '/public/views/about.html',
 				controller: aboutController
 			})
 			.otherwise({

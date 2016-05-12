@@ -1,6 +1,6 @@
 {
   "name": "tsukimi",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "tsukimi media browser",
   "main": "public/index.html",
   "node-main": "tsukimi.js",
