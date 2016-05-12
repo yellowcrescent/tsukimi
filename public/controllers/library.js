@@ -150,7 +150,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		for(fi in paneList) $('#'+paneList[fi]).removeClass('focused');
 
 		// focus new pane
-		console.log("Set focus: "+elem);
+		//console.log("Set focus: "+elem);
 		$scope.hasFocus = elem;
 		$('#'+elem).addClass('focused');
 	};
