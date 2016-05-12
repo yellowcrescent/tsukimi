@@ -93,7 +93,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 				}
 			} else {
 				// select single
-				if($event.ctrlKey) {
+				if($event.ctrlKey || $event.metaKey) {
 					if(bSelected) {
 						// ctrl-click deselect
 						$('#row-'+fid).removeClass('selected');
@@ -250,6 +250,10 @@ function _lib_populate_rview(vobj, $scope) {
 
 function _lib_event_keydown(evt) {
 	console.log("got keydown event",evt);
+
+	var delkey = "Delete";
+	if(tkversion.os == "darwin") delkey = "Backspace";
+
 	if($scope.modal.$isShown == true) {
 		if(evt.code == "Enter") {
 			$scope.modal.confirm();
@@ -280,10 +284,10 @@ function _lib_event_keydown(evt) {
 		} else if(evt.code == "End") {
 			// choose last entry
 			$scope.flist_select(evt, $('.fentry')[llen-1].id.split('-')[1]);
-		} else if(evt.code == "Delete" && evt.shiftKey == false) {
+		} else if(evt.code == delkey && evt.shiftKey == false) {
 			// ignore selected
 			$scope.ignoreSelected();
-		} else if(evt.code == "Delete" && evt.shiftKey == true) {
+		} else if(evt.code == delkey && evt.shiftKey == true) {
 			// delete selected
 			$scope.deleteSelected();
 		}
@@ -306,12 +310,15 @@ function _lib_event_contextmenu(evt) {
 		$('#row-'+iid).addClass('selected');
 		$('#file-'+iid).prop('checked', true);
 
+		var delkey = "Delete";
+		if(tkversion.os == "darwin") delkey = "Backspace";
+
 		// create context menu
 		var fmenu = new nw.Menu();
 		fmenu.append(new nw.MenuItem({ label: "Properties..." }));
 		fmenu.append(new nw.MenuItem({ type: 'separator' }));
-		fmenu.append(new nw.MenuItem({ label: "Ignore", key: "Delete", click: $scope.ignoreSelected }));
-		fmenu.append(new nw.MenuItem({ label: "Delete", key: "Delete", modifiers: "shift", click: $scope.deleteSelected }));
+		fmenu.append(new nw.MenuItem({ label: "Ignore", key: delkey, click: $scope.ignoreSelected }));
+		fmenu.append(new nw.MenuItem({ label: "Delete", key: delkey, modifiers: "shift", click: $scope.deleteSelected }));
 
 		// pop it gud
 		fmenu.popup(evt.x, evt.y);

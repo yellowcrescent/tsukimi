@@ -2,8 +2,8 @@
  ******************************************************************************
  **%%vim: set modelines=15:
  *
- * tsukimi_browser.js
- * AngularJS controllers and services for browser logic
+ * main.js
+ * Tsukimi core & AngularJS bootstrapping
  *
  * Copyright (c) 2014-2016 Jacob Hipps/Neo-Retro Group, Inc.
  * https://ycnrg.org/

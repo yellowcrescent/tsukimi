@@ -16,5 +16,5 @@
 
 function aboutController($scope, $location, $routeParams, $http) {
 	console.log("aboutController start");
-	$scope.version = tkversion;
+	$scope.tkversion = tkversion;
 }

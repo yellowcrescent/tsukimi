@@ -17,6 +17,7 @@
 var settings = require("./settings");
 var pkgdata = require("./package");
 var db = require("./tsk_db");
+var os = require('os');
 
 console.log("tsukimi core starting...");
 console.log("tsukimi v"+pkgdata.version+"\n"+pkgdata.author+"\n"+pkgdata.copyright);
@@ -27,7 +28,7 @@ db.connect(settings.mongo);
 
 function browserInit() {
 	console.log("connected to browser context");
-	return pkgdata.version;
+	return { version: pkgdata.version, os: os.platform(), arch: os.arch(), hostname: os.hostname() } ;
 }
 
 /**
