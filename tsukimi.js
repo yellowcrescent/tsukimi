@@ -18,6 +18,7 @@ var os = require('os');
 var settings = require("./settings");
 var pkgdata = require("./package");
 var db = require("./tsk_db");
+var scrapers = require("./scrapers");
 var scanner = require('./scanner');
 
 console.log("tsukimi core starting...");
@@ -39,3 +40,4 @@ function browserInit() {
 exports.browserInit		= browserInit;
 exports.db				= db;
 exports.scanner			= scanner;
+exports.scrapers		= scrapers;

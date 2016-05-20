@@ -41,6 +41,7 @@
     "url": "https://bitbucket.org/yellowcrescent/tsukimi"
   },
   "dependencies": {
-    "mongodb": "^2.1.18"
+    "mongodb": "^2.1.18",
+    "request": "^2.72.0"
   }
 }

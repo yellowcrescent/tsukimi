@@ -1,0 +1,44 @@
+
+<div id="mdiag_addseries" class="modal">
+  <div class="modal-dialog tsk-diag-wide">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true" ng-click="$hide()">&times;</button>
+        <h4 class="modal-title" ng-bind="title"></h4>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="form-group col-xs-12">
+            <label for="as_sersearch">Series Title</label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="as_sersearch" ng-model="sersearch.qterm" />
+              <span class="input-group-btn">
+                <button class="btn">
+                  <i class="fa fa-search" ng-click="ssmodal.search(sersearch.qterm)"></i>
+                </button>
+              </span>
+            </div>
+            <p class="help-block">Enter a series title to search, then choose a result below</p>
+          </div>
+        </form>
+
+        <div class="tsk-asres">
+          <table class="table tsk-asres-tab">
+            <tbody>
+              <tr ng-repeat="tser in ssmodal.results">
+                <td ng-bind="tser.seriesName"></td>
+                <td ng-bind="tser.firstAired"></td>
+                <td ng-bind="tser.network"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="$hide()">Cancel</button>
+        <button type="button" class="btn btn-success" ng-click="ssmodal.confirm()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>

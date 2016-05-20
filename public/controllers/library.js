@@ -213,6 +213,32 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		});
 	};
 
+	$scope.seriesSearch = function(tdexId) {
+		$scope.sersearch = {};
+		$scope.sersearch.qterm = tdexId.replace(/_/g, ' ');
+
+		// build modal properties dialog
+		$scope.ssmodal = $modal({ title: "Add Series: Search", templateUrl: "/public/views/partials/modal_addseries.html", scope: $scope });
+		$scope.ssmodal.results = [];
+
+		// set up 'save' callback
+		$scope.ssmodal.confirm = function() {
+			// TODO: save stuff
+			$scope.ssmodal.hide();
+		};
+
+		// search callback
+		$scope.ssmodal.search = function(sterm) {
+			console.log("seriesSearch search term: "+sterm);
+			tkcore.scrapers.tvdb_search(sterm, function(res) {
+				console.log("got tvdb response: ",res);
+				$scope.ssmodal.results = res.results;
+				_lib_scopeApply($scope);
+			});
+		};
+
+	};
+
 	$scope.openLocal = function() {
 		// launch 'open folder' dialog and create callback
 		_lib_openDirDialog(function(sdir) {

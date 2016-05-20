@@ -81,3 +81,16 @@ tsukimi.run(['$rootScope','$location','$routeParams', function($rootScope, $loca
 		$('#nav-'+np_id).addClass('active');
 	});
 }]);
+
+/**
+ * Utility functions
+ **/
+
+// Allow multiple modals
+$(document).on('show.bs.modal', '.modal', function(evt) {
+	var zIndex = 1040 + (10 * $('.modal:visible').length);
+	$(this).css('z-index', zIndex);
+	setTimeout(function() {
+		$('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
+	}, 0);
+});
