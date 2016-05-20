@@ -12,7 +12,7 @@
 
 	<div class="tsk-subnav-vdiv"></div>
 
-	<button type="button" class="btn tsk-subnav-button" data-title="Open Local" bs-tooltip>
+	<button type="button" class="btn tsk-subnav-button" data-title="Open Local" bs-tooltip ng-click="openLocal()">
 		<i class="fa fa-folder-open-o"></i>
 	</button>
 	<button type="button" class="btn tsk-subnav-button" data-title="Run Import" bs-tooltip>
@@ -36,9 +36,14 @@
 	<button type="button" class="btn tsk-subnav-button" data-title="Configure Scrapers" bs-tooltip>
 		<i class="fa fa-wrench"></i>
 	</button>
-	<button type="button" class="btn tsk-subnav-button" data-title="Refresh" bs-tooltip>
+	<button id="btn-refresh" type="button" class="btn tsk-subnav-button" data-title="Refresh" bs-tooltip ng-click="refresh()">
 		<i class="fa fa-refresh"></i>
 	</button>
+	<div id="subnavStatus" class="tsk-subnav-status">
+		<span class="tsk-subnav-status-icon" ng-class="scanStatus.iconClassList"></span>
+		<span class="tsk-subnav-status-title" ng-bind="scanStatus.title"></span>
+		<span class="tsk-subnav-status-content" ng-bind="scanStatus.content"></span>
+	</div>
 </div>
 <div id="clientarea">
 	<div id="sidebar" class="tsk-sidebar" ng-click="setFocus('sidebar')">
@@ -54,8 +59,9 @@
 						<input title="Select All/None" type="checkbox" name="file-all" id="file-all" ng-click="flist_toggle_all($event)" />
 						Filename
 					</td>
-					<td>Resolution</td>
-					<td>Duration</td>
+					<td>Season</td>
+					<td>Episode</td>
+					<td>Special</td>
 				</tr>
 			</thead>
 			<tbody id="flist-tab">
@@ -64,12 +70,14 @@
 						<input type="checkbox" name="file-{{tf._id}}" id="file-{{tf._id}}" />
 						{{tf.location[tf.default_location].fpath.file}}
 					</td>
-					<td>{{tf.mediainfo.video[0].width}}x{{tf.mediainfo.video[0].height}} @ {{tf.mediainfo.video[0].frame_rate}}</td>
-					<td>{{tf.mediainfo.video[0].duration}} sec</td>
+					<td>{{tf.fparse.season}}</td>
+					<td>{{tf.fparse.episode}}</td>
+					<td>{{tf.fparse.special}}</td>
 				</tr>
 			</tbody>
 		</table>
 		</form>
 	</div>
 </div>
+<input id="openDialog" type="file" />
 <!--//routes/library-->

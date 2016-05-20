@@ -82,13 +82,16 @@ function get_episode_byid(id, _cbx) {
 }
 
 function query_files(qparams, _cbx) {
-	monjer.collection('files').find(qparams).toArray(_cbx);
+	monjer.collection('files').find(qparams).toArray(function(err, docs) {
+		console.log("query_files: returned "+docs.length+" files");
+		_cbx(err, docs);
+	});
 }
 
 function get_file_groups(_cbx) {
 	// group/reduce by tdex_id (series)
 	var reducer = function(curr,result) {
-					result.series_id = curr.series_id;
+					if(curr.series_id) result.series_id = curr.series_id;
 					result.count++;
 					if(curr.status == "new") result.new++;
 					if(curr.status == "complete") result.complete++;
@@ -96,6 +99,8 @@ function get_file_groups(_cbx) {
 
 	// run aggregation
 	monjer.collection('files').group({ tdex_id: 1 }, {}, { count: 0, new: 0, complete: 0 }, reducer, function(err,docs) {
+		console.log("get_file_groups: returned "+docs.length+" groups");
+		console.log("groups:",docs);
 		_cbx(err,docs);
 	});
 }
@@ -103,6 +108,8 @@ function get_file_groups(_cbx) {
 function get_series_data(_cbx) {
 	monjer.collection('series').find({}).toArray(function(err,docs) {
 		if(err) console.log("ERROR: Failed to retrieve series data: "+err);
+
+		console.log("get_series_data: returned "+docs.length+" series");
 
 		// build assoc array of series
 		var slist = {};

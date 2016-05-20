@@ -1,0 +1,5 @@
+{
+	"mongo": "mongodb://localhost:27017/tsukimi",
+	"data_dir": "~/tsukimi",
+	"xbake_path": "/usr/local/bin/yc_xbake"
+}

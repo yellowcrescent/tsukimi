@@ -14,7 +14,7 @@
  *
  *****************************************************************************/
 
-function libraryController($scope, $location, $routeParams, $http, $filter, $modal) {
+function libraryController($scope, $location, $routeParams, $http, $filter, $modal, $alert) {
 	console.log("libraryController start");
 
 	$scope.flist = [];
@@ -22,6 +22,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	$scope.selected = null;
 	$scope.modeToggle = false;
 	$scope.modal = { '$isShown': false };
+	$scope.scanStatus = { title: "", content: "", iconClassList: [] };
 	var paneList = ['sidebar', 'rport'];
 	var orderBy = $filter('orderBy');
 
@@ -32,27 +33,9 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	// event listener for keyboard stuff
 	document.body.addEventListener('keydown', _lib_event_keydown);
 
-	// event listener for flist context menu
-	document.getElementById('flist-tab').addEventListener('contextmenu', _lib_event_contextmenu);
-
-	// get series data
-	tkcore.db.get_series_data(function(sers) {
-
-		// get tdex group data
-		tkcore.db.get_file_groups(function(err, rez) {
-			if(err) {
-				console.log("ERROR: Failed to retrieve file group listing: "+err);
-				return;
-			}
-			// build tree
-			_lib_build_tree(rez, sers);
-
-			// set up event callbacks
-			$('#lib-tree').on('select_node.jstree', function(e,obj) {
-				_lib_populate_rview(obj.node.original, $scope);
-			});
-		});
-	});
+	// event listeners for context menu
+	document.getElementById('flist-tab').addEventListener('contextmenu', _lib_rview_contextmenu);
+	document.getElementById('lib-tree').addEventListener('contextmenu', _lib_tree_contextmenu);
 
 	$scope.flist_select = function($event, fid) {
 		//console.log("File selected: "+fid);
@@ -194,21 +177,117 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 	};
 
-	$scope.showModal = function(title, body, btn_default, btn_primary, action_default, action_close, action_primary) {
-		// set modal attribs & callbacks
-		$scope.modal = { title: title, body: body, btn_default: btn_default, btn_primary: btn_primary, action_default: action_default, action_close: action_close, action_primary: action_primary };
-		$scope.$apply();
+	$scope.seriesPropDiag = function() {
+		var ccf = $('#lib-tree').jstree(true).get_selected(true)[0].original;
+		var iid = ccf.id;
+		console.log("seriesPropDiag; id = "+iid);
 
-		// setup the dialog
-		$('#clientarea').addClass("blur");
-		$('#mdiag').css('display', "block");
+		tkcore.db.get_series_data(function(slist) {
+			// build property data
+			$scope.sprop = { tdex_id: ccf.id, series_id: ccf.series_id, serdata: slist[ccf.series_id], seriesSelected: slist[ccf.series_id] };
+			$scope.serdata = slist;
+			console.log("seriesPropDiag modal data:", $scope.sprop);
+
+			// build modal properties dialog
+			$scope.modal = $modal({ title: iid, templateUrl: "/public/views/partials/modal_prop_series.html", scope: $scope });
+
+			// set up 'save' callback
+			$scope.modal.confirm = function() {
+				// TODO: save stuff
+				$scope.modal.hide();
+			};
+
+			// set up 'series_id' change callback
+			$scope.modal.seriesChange = function() {
+				if($scope.sprop.seriesSelected != null) {
+					$scope.sprop.series_id = $scope.sprop.seriesSelected._id;
+					$scope.sprop.serdata = $scope.serdata[$scope.sprop.series_id];
+				} else {
+					$scope.sprop.series_id = null;
+					$scope.sprop.serdata = null;
+				}
+				//_lib_scopeApply($scope);
+			};
+
+			_lib_scopeApply($scope);
+		});
 	};
 
-	$scope.modalClose = function() {
-		// teardown the dialog
-		$('#mdiag').css('display', "none");
-		$('#clientarea').removeClass("blur");
+	$scope.openLocal = function() {
+		// launch 'open folder' dialog and create callback
+		_lib_openDirDialog(function(sdir) {
+			console.log("Scanning directory: "+sdir);
+			$scope.scanStatus = { title: "Scanning", content: "Scanning directory: "+sdir, iconClassList: ['fa','fa-spin','fa-moon-o'], show: true };
+			tkcore.scanner.xbake_scandir(sdir, function(sdata) {
+				switch(sdata.msgtype) {
+					case '_exception':
+						console.log("!! XBake: Exception: "+sdata.msg);
+						$scope.scanStatus.title = "Error";
+						$scope.scanStatus.content = "XBake Exception: "+sdata.msg;
+						$scope.scanStatus.type = 'danger';
+						break;
+					case '_close':
+						console.log("** XBake exited. exitcode = "+sdata.exitcode);
+						break;
+					case 'complete':
+						console.log("Scan complete! Files: "+sdata.files+", Series: "+sdata.series);
+						$scope.scanStatus.title = "Scan complete";
+						$scope.scanStatus.content = "Scanned: "+sdata.files+" files / "+sdata.series+" series";
+						$scope.scanStatus.iconClassList = ['fa','fa-check-circle-o'];
+						$scope.refresh();
+						break;
+					case 'scanfile':
+						console.log("Scanning file: "+sdata.filename);
+						$scope.scanStatus.title = "Scanning";
+						$scope.scanStatus.content = sdata.filename;
+						break;
+					case 'series_scrape':
+						console.log("Scraping: "+sdata.tdex_id+" ("+sdata.tdex_data.title+")");
+						$scope.scanStatus.title = "Scraping";
+						$scope.scanStatus.content = sdata.tdex_id+" ("+sdata.tdex_data.title+")";
+						break;
+					default:
+						console.log("[xbake status] "+sdata.msgtype+": "+JSON.stringify(sdata));
+						break;
+				}
+				_lib_scopeApply($scope);
+			});
+		});
 	};
+
+	$scope.refresh = function() {
+		console.log("library->refresh");
+		// make spinny thing spin
+		$('#btn-refresh').addClass("fa-spin");
+
+		// get series data
+		tkcore.db.get_series_data(function(sers) {
+
+			// get tdex group data
+			tkcore.db.get_file_groups(function(err, rez) {
+				if(err) {
+					console.log("ERROR: Failed to retrieve file group listing: "+err);
+					$('#btn-refresh').removeClass("fa-spin");
+					return;
+				}
+				// build tree
+				_lib_build_tree(rez, sers);
+
+				// set up event callbacks
+				$('#lib-tree').on('select_node.jstree', function(e,obj) {
+					_lib_populate_rview(obj.node.original, $scope);
+				});
+
+				// stop spinnin
+				$('#btn-refresh').removeClass("fa-spin");
+			});
+		});
+
+		//_lib_scopeApply($scope);
+	};
+
+	// perform initial update
+	$scope.refresh();
 
 	window.$scope = $scope;
 }
@@ -221,14 +300,20 @@ function _lib_build_tree(indata, sdata) {
 		var tnode = {
 						id: tg.tdex_id,
 						series_id: tg.series_id,
-						text: (tsd.title ? tsd.title : tg.tdex_id),
+						text: (tsd ? tsd.title : tg.tdex_id),
 						icon: "fa " + (tg.series_id ? "fa-circle-o" : "fa-exclamation-triangle")
 					}
 		ygg.push(tnode)
 	}
 
-	// build tree
-	$('#lib-tree').jstree({ core: { data: ygg } });
+	if($('#lib-tree').jstree(true).settings) {
+		// update existing tree
+		$('#lib-tree').jstree(true).settings.core.data = ygg;
+		$('#lib-tree').jstree(true).refresh();
+	} else {
+		// build tree
+		$('#lib-tree').jstree({ core: { data: ygg } });
+	}
 }
 
 function _lib_populate_rview(vobj, $scope) {
@@ -240,7 +325,7 @@ function _lib_populate_rview(vobj, $scope) {
 		//console.log("populating flist:",docs);
 		$scope.flist = docs;
 		$scope.reorder('sort_filename');
-		$scope.$apply();
+		_lib_scopeApply($scope);
 
 		// reset file-all checkbox
 		$('#file-all').prop('checked', false);
@@ -300,8 +385,8 @@ function _lib_event_keydown(evt) {
 	}
 }
 
-function _lib_event_contextmenu(evt) {
-	console.log("got contextmenu event");
+function _lib_rview_contextmenu(evt) {
+	console.log("got rview contextmenu event");
 	var iid;
 
 	try {
@@ -332,4 +417,68 @@ function _lib_event_contextmenu(evt) {
 
 	evt.preventDefault();
 	return false;
+}
+
+function _lib_tree_contextmenu(evt) {
+	console.log("got rview contextmenu event");
+	console.log("evt =",evt);
+	var iid;
+
+	try {
+		iid = evt.target.parentElement.id;
+	} catch(e) {
+		iid = null;
+	}
+
+	if(iid) {
+		// deselect all; select this one
+		var delkey = "Delete";
+		if(tkversion.os == "darwin") delkey = "Backspace";
+
+		// create context menu
+		var fmenu = new nw.Menu();
+		fmenu.append(new nw.MenuItem({ label: "Properties...", click: $scope.seriesPropDiag }));
+		fmenu.append(new nw.MenuItem({ label: "Change identifier..." }));
+		fmenu.append(new nw.MenuItem({ type: 'separator' }));
+		fmenu.append(new nw.MenuItem({ label: "Ignore All", key: delkey, click: $scope.ignoreSelected }));
+
+		// pop it gud
+		fmenu.popup(evt.x, evt.y);
+	}
+
+	evt.preventDefault();
+	return false;
+}
+
+function _lib_openDirDialog(_cbx) {
+	var od = $('#openDialog');
+	od.attr('nwdirectory', true);
+	od.unbind('change');
+	od.val(null);
+	od.change(function(evt) {
+		_cbx($('#openDialog').val());
+	});
+	od.trigger('click');
+}
+
+function _lib_openFileDialog(_cbx) {
+	var od = $('#openDialog');
+	od.attr('nwdirectory', false);
+	od.unbind('change');
+	od.val(null);
+	od.change(function(evt) {
+		_cbx($('#openDialog').val());
+	});
+	od.trigger('click');
+}
+
+function _lib_scopeApply($scope) {
+	if(!$scope.$$phase) {
+		console.log("[_lib_scopeApply] $scope.$apply()");
+		$scope.$apply();
+		return true;
+	} else {
+		console.log("[_lib_scopeApply] $$phase active, skipping $apply");
+		return false;
+	}
 }

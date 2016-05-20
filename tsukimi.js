@@ -14,10 +14,11 @@
  *
  *****************************************************************************/
 
+var os = require('os');
 var settings = require("./settings");
 var pkgdata = require("./package");
 var db = require("./tsk_db");
-var os = require('os');
+var scanner = require('./scanner');
 
 console.log("tsukimi core starting...");
 console.log("tsukimi v"+pkgdata.version+"\n"+pkgdata.author+"\n"+pkgdata.copyright);
@@ -27,8 +28,8 @@ db.connect(settings.mongo);
 
 
 function browserInit() {
-	console.log("connected to browser context");
-	return { version: pkgdata.version, os: os.platform(), arch: os.arch(), hostname: os.hostname() } ;
+	console.log("Connected to Node.js context. Node.js env PATH: "+process.env.PATH);
+	return { version: pkgdata.version, os: os.platform(), arch: os.arch(), hostname: os.hostname(), path: process.env.PATH } ;
 }
 
 /**
@@ -37,3 +38,4 @@ function browserInit() {
 
 exports.browserInit		= browserInit;
 exports.db				= db;
+exports.scanner			= scanner;

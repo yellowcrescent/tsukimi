@@ -221,13 +221,43 @@ body {
 		vertical-align: middle;
 		margin: 0px 5px;
 	}
+
+	&-status {
+		float: right;
+		overflow: hidden;
+		width: 60%;
+		height: 30px;
+		background: rgba(30,30,30,0.2);
+		line-height: 30px;
+
+		&-title {
+			margin: 0px 15px 0px 0px;
+			font-family: "Kozuka Gothic Pro B", "Kozuka Gothic Pro";
+			font-weight: 700;
+		}
+
+		&-content {
+			margin: 0px 5px;
+			font-family: "Kozuka Gothic Pro R", "Kozuka Gothic Pro";
+			font-weight: 500;
+			text-overflow: ellipsis;
+			font-size: 14px;
+		}
+
+		&-icon {
+			margin: 3px 10px;
+			font-size: 25px;
+			color: rgba(240,240,240,0.6);
+			text-shadow: 1px 1px rgba(40, 40, 40, 0.2);
+		}
+	}
 }
 
 .tsk-sidebar {
-	position: fixed;
+	position: static;
 	top: $lib_headroom;
 	bottom: 0px;
-	overflow-x: auto;
+	overflow-x: hidden;
 	overflow-y: scroll;
 	width: $sidebar_width;
 	height: 100%;
@@ -250,7 +280,7 @@ body {
 	left: $sidebar_width;
 	right: 0px;
 	overflow-y: scroll;
-	overflow-x: hidden;
+	overflow-x: auto;
 	transition: box-shadow 1.25s ease-out;
 
 	&.focused {
@@ -348,6 +378,9 @@ body {
 		padding-top: 12px;
 	}
 
+	&-wide {
+		width: 830px !important;
+	}
 }
 
 .modal-body {
@@ -395,6 +428,10 @@ body {
 	transition: -webkit-filter 0.4s ease;
 }
 
+#openDialog {
+	display: none;
+}
+
 .blur {
 	-webkit-filter: blur(4px);
 	transition: -webkit-filter 0.4s ease;
@@ -402,6 +439,10 @@ body {
 
 .hidden {
 	display: none;
+}
+
+.clearboth {
+	clear: both;
 }
 
 .tsk-epgroup {
