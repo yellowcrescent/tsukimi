@@ -21,8 +21,8 @@ var db = require("./tsk_db");
 var scrapers = require("./scrapers");
 var scanner = require('./scanner');
 
+process.stdout.write("tsukimi v"+pkgdata.version+"\n"+pkgdata.author+"\n"+pkgdata.copyright+"\nhttps://tsukimi.io/\nhttps://ycnrg.org\n\n");
 console.log("tsukimi core starting...");
-console.log("tsukimi v"+pkgdata.version+"\n"+pkgdata.author+"\n"+pkgdata.copyright);
 
 // Connect to Mongo
 db.connect(settings.mongo);

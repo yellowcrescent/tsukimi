@@ -13,8 +13,8 @@
             <div class="input-group">
               <input type="text" class="form-control" id="as_sersearch" ng-model="sersearch.qterm" />
               <span class="input-group-btn">
-                <button class="btn">
-                  <i class="fa fa-search" ng-click="ssmodal.search(sersearch.qterm)"></i>
+                <button id="as_serbtn" class="btn" type="submit">
+                  <i id="as_sericon" class="fa fa-search" ng-click="ssmodal.search(sersearch.qterm)"></i>
                 </button>
               </span>
             </div>
@@ -22,22 +22,23 @@
           </div>
         </form>
 
-        <div class="tsk-asres">
-          <table class="table tsk-asres-tab">
-            <tbody>
-              <tr ng-repeat="tser in ssmodal.results">
-                <td ng-bind="tser.seriesName"></td>
-                <td ng-bind="tser.firstAired"></td>
-                <td ng-bind="tser.network"></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="tsk-asres">
+            <table class="table tsk-asres-tab">
+              <tbody>
+                <tr ng-repeat="tser in ssmodal.results track by tser.id" id="row_{{tser.id}}" class="tsk-tser-row">
+                  <td><input type="radio" ng-model="sersearch.tvsel" ng-change="ssmodal.inputChange(tser.id)" ng-value="tser.id" name="tvsel" id="tvsel_{{tser.id}}" /></td>
+                  <td ng-bind="tser.seriesName"></td>
+                  <td ng-bind="tser.firstAired"></td>
+                  <td ng-bind="tser.network"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="$hide()">Cancel</button>
-        <button type="button" class="btn btn-success" ng-click="ssmodal.confirm()">Save</button>
+        <button type="button" class="btn btn-success" ng-disabled="!ssmodal.inputIsValid" ng-click="ssmodal.confirm(sersearch.tvsel)">Select</button>
       </div>
     </div>
   </div>

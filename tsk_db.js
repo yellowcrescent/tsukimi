@@ -122,6 +122,137 @@ function get_series_data(_cbx) {
 	});
 }
 
+function update_series(serid, indata, _cbx) {
+	monjer.collection('series').update({ _id: serid }, indata, function(err,rdoc) {
+		if(err) {
+			console.log("Failed to update series data for "+serid);
+			_cbx(err);
+		} else {
+			console.log("Wrote updated series data for "+serid);
+			_cbx(null);
+		}
+	});
+}
+
+function add_series_full(sname, indata, _cbx) {
+	// clone data
+	var sdata = JSON.parse(JSON.stringify(indata));
+	delete(sdata.episodes);
+
+	// generate a new norm_id
+	var new_tdex = normalize(sdata.ctitle);
+
+	// generate series_id
+	var tser_id = mkid_series(new_tdex, sdata);
+
+	// set series data
+	var thisx = {
+					'_id': tser_id,
+					norm_id: new_tdex,
+					title: sdata.ctitle,
+					count: null,
+					genre: sdata.genre,
+					xrefs: sdata.xrefs,
+					tv: sdata.tv,
+					ctitle: sdata.ctitle,
+					synopsis: sdata.synopsis,
+					lastupdated: sdata.lastupdated,
+					artwork: sdata.artwork
+				};
+
+	// process episode data
+	var eplist = [];
+	for(ti in indata.episodes) {
+		var thisep = indata.episodes[ti];
+		var tep_id = mkid_episode(tser_id, thisep);
+		thisep._id = tep_id;
+		thisep.tvdb_id = thisep.id;
+		thisep.sid = tser_id;
+		delete(thisep.id);
+		eplist.push(thisep);
+	}
+
+	console.log("eplist ready for insert:",eplist);
+
+	// insert series data into Mongo
+	monjer.collection('series').insert(thisx, function(err,rec) {
+		if(!err) {
+			monjer.collection('episodes').insert(eplist, function(err,rec) {
+				if(!err) {
+					console.log("Inserted series and episode data into Mongo successfully!");
+					_cbx({ status: "ok", new_tdex: new_tdex, series_id: tser_id });
+				} else {
+					console.log("ERROR: failed to insert episodes into Mongo. err:",err);
+					_cbx({ status: "error", error: err });
+				}
+			});
+		} else {
+			console.log("ERROR: failed to insert series into Mongo. err:",err);
+			_cbx({ status: "error", error: err });
+		}
+	});
+
+}
+
+function mkid_series(sid, xdata) {
+	// create unique series ID with tdex_id + release year
+	var dyear;
+	if(xdata.tv.debut) {
+		dyear = String((new Date(parseFloat(xdata.tv.debut) * 1000.0)).getFullYear());
+	} else {
+		dyear = "90" + String(parseInt(Date.now() / 1000)).substr(-5);
+	}
+	return sid + "." + dyear
+}
+
+function mkid_episode(sid, xdata) {
+	var isuf = (xdata.id || String(Date.now() / 1000000.0).split('.')[1])
+	return sid + "." + (String(xdata.SeasonNumber) || '0') + "." + (String(xdata.EpisodeNumber) || '0') + "." + isuf;
+}
+
+function update_file_series(match, serid, _cbx) {
+	// retrieve files for update
+	monjer.collection('files').find(match).toArray(function(err,files) {
+		console.log("returned files =",files);
+		// retrieve episodes for series
+		monjer.collection('episodes').find({ sid: serid }).toArray(function(err,eplist) {
+			// loop through all of the files and update the series_id and episode_id
+			var fcount = eplist.length;
+			var newfiles = [];
+			for(ti in files) {
+				var tfile = files[ti];
+				console.log("ti="+ti+", tfile=",tfile);
+				tfile.series_id = serid;
+				tfile.episode_id = (eplist.filter(function(x) { return (parseInt(x.SeasonNumber) == parseInt(tfile.fparse.season) && parseInt(x.EpisodeNumber) == parseInt(tfile.fparse.episode) ? true : false); })[0]._id || null);
+				newfiles.push(tfile);
+			}
+			// remove existing files; may change this later, but this makes things
+			// easier so that we don't need to create a seperate function to do this
+			// with a chain of callbacks to update every single entry
+			monjer.collection('files').remove(match, function(err,rdoc) {
+				if(!err) console.log("removed existing files without error");
+				else console.log("ERROR: error removing existing files")
+
+				// update files
+				monjer.collection('files').insert(newfiles, function(err,rdoc) {
+					if(!err) console.log("inserted updated file entries OK");
+					else console.log("ERROR: error when adding new file entries");
+
+					// update series entry with correct count
+					monjer.collection('series').update({ '_id': serid }, { '$set': { count: fcount } }, function(err,rdoc) {
+						console.log("updated series file count OK");
+						_cbx(null);
+					});
+				});
+			});
+		});
+	});
+}
+
+function normalize(instr) {
+	return instr.replace(/[ ★☆\.]/g,'_').replace(/['`\-\?!%&\*@\(\)#:,\/\\;\+=\[\]\{\}\$\<\>]/g,'').toLowerCase().trim();
+}
+
 /**
  * Exports
  **/
@@ -140,3 +271,6 @@ exports.get_episode_byid	= get_episode_byid;
 exports.query_files			= query_files;
 exports.get_file_groups		= get_file_groups;
 exports.get_series_data		= get_series_data;
+exports.add_series_full		= add_series_full;
+exports.update_file_series	= update_file_series;
+exports.update_series		= update_series;

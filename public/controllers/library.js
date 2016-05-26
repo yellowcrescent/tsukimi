@@ -23,7 +23,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	$scope.modeToggle = false;
 	$scope.modal = { '$isShown': false };
 	$scope.scanStatus = { title: "", content: "", iconClassList: [] };
-	var paneList = ['sidebar', 'rport'];
+	var paneList = ['sidebar', 'rport', 'modal', 'ssmodal'];
 	var orderBy = $filter('orderBy');
 
 	$scope.reorder = function(pred) {
@@ -139,6 +139,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	};
 
 	$scope.ignoreSelected = function() {
+		$scope.hasFocus = 'modal';
 		console.log("ignoreSelected");
 
 		// show modal
@@ -157,6 +158,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	};
 
 	$scope.deleteSelected = function () {
+		$scope.hasFocus = 'modal';
 		console.log("deleteSelected");
 
 		// build modal confirmation dialog
@@ -178,13 +180,14 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	};
 
 	$scope.seriesPropDiag = function() {
+		$scope.hasFocus = 'modal';
 		var ccf = $('#lib-tree').jstree(true).get_selected(true)[0].original;
 		var iid = ccf.id;
 		console.log("seriesPropDiag; id = "+iid);
 
 		tkcore.db.get_series_data(function(slist) {
 			// build property data
-			$scope.sprop = { tdex_id: ccf.id, series_id: ccf.series_id, serdata: slist[ccf.series_id], seriesSelected: slist[ccf.series_id] };
+			$scope.sprop = { tdex_id: ccf.id, orig_series: ccf.series_id, series_id: ccf.series_id, serdata: slist[ccf.series_id], seriesSelected: slist[ccf.series_id] };
 			$scope.serdata = slist;
 			console.log("seriesPropDiag modal data:", $scope.sprop);
 
@@ -193,8 +196,24 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 			// set up 'save' callback
 			$scope.modal.confirm = function() {
-				// TODO: save stuff
+				// update series data from serdata
+				if($scope.sprop.serdata && $scope.sprop.series_id) {
+					tkcore.db.update_series($scope.sprop.series_id, $scope.sprop.serdata, function(err) {
+						// update series/episode mapping if series has changed
+						if($scope.sprop.orig_series != $scope.sprop.series_id) {
+							tkcore.db.update_file_series({ tdex_id: ccf.id }, $scope.sprop.series_id, function(err) {
+								$scope.modal.finish();
+							});
+						} else {
+							$scope.modal.finish();
+						}
+					});
+				}
+			};
+
+			$scope.modal.finish = function() {
 				$scope.modal.hide();
+				$scope.refresh();
 			};
 
 			// set up 'series_id' change callback
@@ -206,35 +225,119 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 					$scope.sprop.series_id = null;
 					$scope.sprop.serdata = null;
 				}
-				//_lib_scopeApply($scope);
+			};
+
+			$scope.modal.doSearch = function(sterm) {
+				// setup completion callback to update properties modal
+				$scope.seriesSearch(sterm, function(result) {
+					console.log("doSearch callback");
+					// grab updated series data
+					tkcore.db.get_series_data(function(slist) {
+						$scope.serdata = slist;
+						if(result) {
+							$scope.sprop.seriesSelected = $scope.serdata[result];
+							$scope.modal.seriesChange();
+							_lib_scopeApply($scope);
+						}
+					});
+					$scope.hasFocus = 'modal';
+				});
 			};
 
 			_lib_scopeApply($scope);
 		});
 	};
 
-	$scope.seriesSearch = function(tdexId) {
-		$scope.sersearch = {};
-		$scope.sersearch.qterm = tdexId.replace(/_/g, ' ');
+	$scope.seriesSearch = function(tdexId=null,_cbx=null) {
+		$scope.hasFocus = 'ssmodal';
+
+		// initialize sersearch obj
+		$scope.sersearch = { qterm: null, tvsel: null };
+		if(tdexId) {
+			$scope.sersearch.qterm = tdexId.replace(/_/g, ' ');
+		}
 
 		// build modal properties dialog
 		$scope.ssmodal = $modal({ title: "Add Series: Search", templateUrl: "/public/views/partials/modal_addseries.html", scope: $scope });
+		$scope.ssmodal.inputIsValid = false;
 		$scope.ssmodal.results = [];
 
 		// set up 'save' callback
-		$scope.ssmodal.confirm = function() {
-			// TODO: save stuff
-			$scope.ssmodal.hide();
+		$scope.ssmodal.confirm = function(selected) {
+			console.log("seriesSearch: selected tvdb id = "+selected);
+			if(selected) {
+				// create progress modal
+				$scope.modalWait = $modal({ title: "Retrieving Series Information...", templateUrl: "/public/views/partials/modal_wait.html", scope: $scope, content: "Retrieving data from TheTVDb" });
+				$scope.modalWait.contentIcon = "fa-cog fa-spin";
+
+				tkcore.scrapers.tvdb_get_series(selected, function(newdata) {
+					if(newdata.status == "ok") {
+						// update modal text
+						$scope.modalWait.content = "Updating database";
+						_lib_scopeApply($scope);
+						// add series and episodes to database
+						tkcore.db.add_series_full(tdexId, newdata.result, function(addrez) {
+							if(addrez.status == "ok") {
+								console.log("Series added to database OK; tdex_id="+addrez.new_tdex+" / series_id="+addrez.series_id);
+								$scope.modalWait.hide();
+								$scope.ssmodal.hide();
+								if(_cbx) _cbx(addrez.series_id);
+							}
+						});
+					} else {
+						console.log("ERROR: failed to retrieve series data");
+						if(_cbx) _cbx(null);
+					}
+				});
+			} else {
+				if(_cbx) _cbx(null);
+			}
 		};
 
 		// search callback
 		$scope.ssmodal.search = function(sterm) {
-			console.log("seriesSearch search term: "+sterm);
-			tkcore.scrapers.tvdb_search(sterm, function(res) {
-				console.log("got tvdb response: ",res);
-				$scope.ssmodal.results = res.results;
-				_lib_scopeApply($scope);
-			});
+			if(sterm.trim().length > 1) {
+				// disable search button and spin up the spinner
+				$('#as_sericon').removeClass('fa-search');
+				$('#as_sericon').addClass('fa-refresh fa-spin');
+				$('#as_serbtn').prop('disabled', true);
+				tkcore.scrapers.tvdb_search(sterm.trim(), function(res) {
+					// enable search button again
+					$('#as_sericon').removeClass('fa-refresh fa-spin');
+					$('#as_sericon').addClass('fa-search');
+					$('#as_serbtn').prop('disabled', false);
+					console.log("got tvdb response: ",res);
+					$scope.ssmodal.results = res.results;
+					_lib_scopeApply($scope);
+				});
+			}
+		};
+
+		// keydown callback
+		$scope.ssmodal.keydown = function(evt) {
+			console.log("ssmodal keydown called; evt.code = "+evt.code+"; as_sersearch focus'd =",$('#as_sersearch').is(':focus'));
+			if($('#as_sersearch').is(':focus')) {
+				if(evt.code == 'Enter') {
+					$scope.ssmodal.search($scope.sersearch.qterm);
+					evt.preventDefault();
+					return false;
+				}
+			} else {
+				if(evt.code == 'Enter') {
+					if($scope.sersearch.tvsel) {
+						$scope.ssmodal.confirm($scope.sersearch.tvsel);
+					}
+					evt.preventDefault();
+					return false;
+				}
+			}
+		};
+
+		$scope.ssmodal.inputChange = function(selected) {
+			$scope.ssmodal.inputIsValid = true;
+			//console.log("inputChange:"+selected);
+			$('.tsk-tser-row').removeClass('info');
+			$('#row_'+selected).addClass('info');
 		};
 
 	};
@@ -360,12 +463,12 @@ function _lib_populate_rview(vobj, $scope) {
 }
 
 function _lib_event_keydown(evt) {
-	console.log("got keydown event",evt);
+	console.log("got keydown event; hasFocus = "+$scope.hasFocus+"; evt =",evt);
 
 	var delkey = "Delete";
 	if(tkversion.os == "darwin") delkey = "Backspace";
 
-	if($scope.modal.$isShown == true) {
+	if($scope.hasFocus == 'modal' && $scope.modal.$isShown == true) {
 		if(evt.code == "Enter") {
 			$scope.modal.confirm();
 		} else if(evt.code == "Escape") {
@@ -408,6 +511,10 @@ function _lib_event_keydown(evt) {
 			evt.preventDefault();
 			return false;
 		}
+	} else if($scope.hasFocus == 'modal') {
+		if($scope.modal.keydown) $scope.modal.keydown(evt);
+	} else if($scope.hasFocus == 'ssmodal') {
+		if($scope.ssmodal.keydown) $scope.ssmodal.keydown(evt);
 	}
 }
 
