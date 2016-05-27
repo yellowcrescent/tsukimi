@@ -16,6 +16,7 @@
 
 var child_process = require('child_process');
 var fs = require('fs');
+var logthis = require('./logthis');
 
 exports.xbake_scandir = function(indir, _cbx) {
 

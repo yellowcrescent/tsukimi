@@ -15,7 +15,7 @@
  *****************************************************************************/
 
 function libraryController($scope, $location, $routeParams, $http, $filter, $modal, $alert) {
-	console.log("libraryController start");
+	logthis.debug("libraryController start");
 
 	$scope.flist = [];
 	$scope.hasFocus = null;
@@ -38,8 +38,6 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	document.getElementById('lib-tree').addEventListener('contextmenu', _lib_tree_contextmenu);
 
 	$scope.flist_select = function($event, fid) {
-		//console.log("File selected: "+fid);
-		//console.log("Event: ",$event);
 		var bSelected = $('#file-'+fid).prop('checked');
 		var tindex = $('.fentry').index($('#row-'+fid));
 
@@ -133,14 +131,12 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		for(fi in paneList) $('#'+paneList[fi]).removeClass('focused');
 
 		// focus new pane
-		//console.log("Set focus: "+elem);
 		$scope.hasFocus = elem;
 		$('#'+elem).addClass('focused');
 	};
 
 	$scope.ignoreSelected = function() {
 		$scope.hasFocus = 'modal';
-		console.log("ignoreSelected");
 
 		// show modal
 		$scope.modal = $modal({ title: "Confirm Ignore", templateUrl: "/public/views/partials/modal_ignore_confirm.html", scope: $scope });
@@ -148,9 +144,9 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		// callback
 		$scope.modal.confirm = function() {
 			var slist = $('.fentry.selected');
-			console.log("slist =", slist);
+			logthis.debug("slist: %j", slist, {});
 			for(var ti = 0; ti < slist.length; ti++) {
-				console.log("ignore: ", slist[ti]);
+				logthis.debug("ignore: %j", slist[ti], {});
 			}
 			$scope.modal.hide();
 		};
@@ -159,7 +155,6 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 	$scope.deleteSelected = function () {
 		$scope.hasFocus = 'modal';
-		console.log("deleteSelected");
 
 		// build modal confirmation dialog
 		$scope.modal = $modal({ title: "Confirm Delete", templateUrl: "/public/views/partials/modal_basic.html", scope: $scope, content: "Delete file(s) from disk and remove corresponding database entries? <br/><b>This cannot be undone</b>" });
@@ -170,9 +165,9 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		// callback
 		$scope.modal.confirm = function() {
 			var slist = $('.fentry.selected');
-			console.log("slist =", slist);
+			logthis.debug("slist: %j", slist, {});
 			for(var ti = 0; ti < slist.length; ti++) {
-				console.log("delete: ", slist[ti]);
+				logthis.debug("delete: %j", slist[ti], {});
 			}
 			$scope.modal.hide();
 		};
@@ -183,13 +178,13 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		$scope.hasFocus = 'modal';
 		var ccf = $('#lib-tree').jstree(true).get_selected(true)[0].original;
 		var iid = ccf.id;
-		console.log("seriesPropDiag; id = "+iid);
+		logthis.debug("seriesPropDiag; id = %s", iid);
 
 		tkcore.db.get_series_data(function(slist) {
 			// build property data
 			$scope.sprop = { tdex_id: ccf.id, orig_series: ccf.series_id, series_id: ccf.series_id, serdata: slist[ccf.series_id], seriesSelected: slist[ccf.series_id] };
 			$scope.serdata = slist;
-			console.log("seriesPropDiag modal data:", $scope.sprop);
+			logthis.debug("seriesPropDiag modal data", $scope.sprop);
 
 			// build modal properties dialog
 			$scope.modal = $modal({ title: iid, templateUrl: "/public/views/partials/modal_prop_series.html", scope: $scope });
@@ -230,7 +225,6 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 			$scope.modal.doSearch = function(sterm) {
 				// setup completion callback to update properties modal
 				$scope.seriesSearch(sterm, function(result) {
-					console.log("doSearch callback");
 					// grab updated series data
 					tkcore.db.get_series_data(function(slist) {
 						$scope.serdata = slist;
@@ -264,7 +258,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 		// set up 'save' callback
 		$scope.ssmodal.confirm = function(selected) {
-			console.log("seriesSearch: selected tvdb id = "+selected);
+			logthis.debug("seriesSearch: selected tvdb id = %s", selected);
 			if(selected) {
 				// create progress modal
 				$scope.modalWait = $modal({ title: "Retrieving Series Information...", templateUrl: "/public/views/partials/modal_wait.html", scope: $scope, content: "Retrieving data from TheTVDb" });
@@ -278,14 +272,14 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 						// add series and episodes to database
 						tkcore.db.add_series_full(tdexId, newdata.result, function(addrez) {
 							if(addrez.status == "ok") {
-								console.log("Series added to database OK; tdex_id="+addrez.new_tdex+" / series_id="+addrez.series_id);
+								logthis.verbose("Series added to database OK; tdex_id=%s / series_id=%s", addrez.new_tdex, addrez.series_id);
 								$scope.modalWait.hide();
 								$scope.ssmodal.hide();
 								if(_cbx) _cbx(addrez.series_id);
 							}
 						});
 					} else {
-						console.log("ERROR: failed to retrieve series data");
+						logthis.error("Failed to retrieve series data", newdata);
 						if(_cbx) _cbx(null);
 					}
 				});
@@ -306,7 +300,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 					$('#as_sericon').removeClass('fa-refresh fa-spin');
 					$('#as_sericon').addClass('fa-search');
 					$('#as_serbtn').prop('disabled', false);
-					console.log("got tvdb response: ",res);
+					logthis.debug("got tvdb response", res);
 					$scope.ssmodal.results = res.results;
 					_lib_scopeApply($scope);
 				});
@@ -315,7 +309,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 		// keydown callback
 		$scope.ssmodal.keydown = function(evt) {
-			console.log("ssmodal keydown called; evt.code = "+evt.code+"; as_sersearch focus'd =",$('#as_sersearch').is(':focus'));
+			logthis.debug("ssmodal keydown called; evt.code = %s; as_sersearch focus'd = %s",evt.code, $('#as_sersearch').is(':focus'));
 			if($('#as_sersearch').is(':focus')) {
 				if(evt.code == 'Enter') {
 					$scope.ssmodal.search($scope.sersearch.qterm);
@@ -335,7 +329,6 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 		$scope.ssmodal.inputChange = function(selected) {
 			$scope.ssmodal.inputIsValid = true;
-			//console.log("inputChange:"+selected);
 			$('.tsk-tser-row').removeClass('info');
 			$('#row_'+selected).addClass('info');
 		};
@@ -345,38 +338,38 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	$scope.openLocal = function() {
 		// launch 'open folder' dialog and create callback
 		_lib_openDirDialog(function(sdir) {
-			console.log("Scanning directory: "+sdir);
+			logthis.verbose("Scanning directory: %s", sdir);
 			$scope.scanStatus = { title: "Scanning", content: "Scanning directory: "+sdir, iconClassList: ['fa','fa-spin','fa-moon-o'], show: true };
 			tkcore.scanner.xbake_scandir(sdir, function(sdata) {
 				switch(sdata.msgtype) {
 					case '_exception':
-						console.log("!! XBake: Exception: "+sdata.msg);
+						logthis.error("XBake: Exception: %s", sdata.msg, sdata);
 						$scope.scanStatus.title = "Error";
 						$scope.scanStatus.content = "XBake Exception: "+sdata.msg;
 						$scope.scanStatus.type = 'danger';
 						break;
 					case '_close':
-						console.log("** XBake exited. exitcode = "+sdata.exitcode);
+						logthis.verbose("XBake exited -- retval = %d", sdata.exitcode);
 						break;
 					case 'complete':
-						console.log("Scan complete! Files: "+sdata.files+", Series: "+sdata.series);
+						logthis.info("XBake scan complete -- files: %d / series: %d", sdata.files, sdata.series);
 						$scope.scanStatus.title = "Scan complete";
 						$scope.scanStatus.content = "Scanned: "+sdata.files+" files / "+sdata.series+" series";
 						$scope.scanStatus.iconClassList = ['fa','fa-check-circle-o'];
 						$scope.refresh();
 						break;
 					case 'scanfile':
-						console.log("Scanning file: "+sdata.filename);
+						logthis.info("Scanning file: %s", sdata.filename);
 						$scope.scanStatus.title = "Scanning";
 						$scope.scanStatus.content = sdata.filename;
 						break;
 					case 'series_scrape':
-						console.log("Scraping: "+sdata.tdex_id+" ("+sdata.tdex_data.title+")");
+						logthis.info("Scraping: %s (%s)", sdata.tdex_id, sdata.tdex_data.title);
 						$scope.scanStatus.title = "Scraping";
 						$scope.scanStatus.content = sdata.tdex_id+" ("+sdata.tdex_data.title+")";
 						break;
 					default:
-						console.log("[xbake status] "+sdata.msgtype+": "+JSON.stringify(sdata));
+						logthis.debug("[xbake status] %s: %j", sdata.msgtype, sdata, {});
 						break;
 				}
 				_lib_scopeApply($scope);
@@ -385,7 +378,6 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	};
 
 	$scope.refresh = function() {
-		console.log("library->refresh");
 		// make spinny thing spin
 		$('#btn-refresh').addClass("fa-spin");
 
@@ -395,7 +387,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 			// get tdex group data
 			tkcore.db.get_file_groups(function(err, rez) {
 				if(err) {
-					console.log("ERROR: Failed to retrieve file group listing: "+err);
+					logthis.error("Failed to retrieve file group listing", { error: err, result: rez });
 					$('#btn-refresh').removeClass("fa-spin");
 					return;
 				}
@@ -451,7 +443,6 @@ function _lib_populate_rview(vobj, $scope) {
 		for(ti in docs) {
 			docs[ti].sort_filename = docs[ti].location[docs[ti].default_location].fpath.file;
 		}
-		//console.log("populating flist:",docs);
 		$scope.flist = docs;
 		$scope.reorder('sort_filename');
 		_lib_scopeApply($scope);
@@ -463,7 +454,7 @@ function _lib_populate_rview(vobj, $scope) {
 }
 
 function _lib_event_keydown(evt) {
-	console.log("got keydown event; hasFocus = "+$scope.hasFocus+"; evt =",evt);
+	//console.log("got keydown event; hasFocus = "+$scope.hasFocus+"; evt =",evt);
 
 	var delkey = "Delete";
 	if(tkversion.os == "darwin") delkey = "Backspace";
@@ -519,7 +510,6 @@ function _lib_event_keydown(evt) {
 }
 
 function _lib_rview_contextmenu(evt) {
-	console.log("got rview contextmenu event");
 	var iid;
 
 	try {
@@ -553,8 +543,6 @@ function _lib_rview_contextmenu(evt) {
 }
 
 function _lib_tree_contextmenu(evt) {
-	console.log("got rview contextmenu event");
-	console.log("evt =",evt);
 	var iid;
 
 	try {
@@ -607,11 +595,11 @@ function _lib_openFileDialog(_cbx) {
 
 function _lib_scopeApply($scope) {
 	if(!$scope.$$phase) {
-		console.log("[_lib_scopeApply] $scope.$apply()");
+		//console.log("[_lib_scopeApply] $scope.$apply()");
 		$scope.$apply();
 		return true;
 	} else {
-		console.log("[_lib_scopeApply] $$phase active, skipping $apply");
+		//console.log("[_lib_scopeApply] $$phase active, skipping $apply");
 		return false;
 	}
 }

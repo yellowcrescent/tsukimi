@@ -20,6 +20,7 @@
 
 var tkcore = require('./tsukimi');
 var tkversion = tkcore.browserInit();
+var logthis = tkcore.logthis;
 
 /**
  * AngularJS bootstrap and dependency injection
@@ -74,7 +75,7 @@ tsukimi.run(['$rootScope','$location','$routeParams', function($rootScope, $loca
 			op_id = path2id[old_path];
 			if(op_id) $('#nav-'+op_id).removeClass('active');
 		} catch(e) {
-			console.log("old_path undefined");
+			//console.log("old_path undefined");
 		}
 		new_path = cur.$$route.originalPath;
 		np_id = path2id[new_path];

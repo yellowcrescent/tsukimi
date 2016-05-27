@@ -17,6 +17,7 @@
 var request = require('request');
 var pkgdata = require("./package");
 var xml2js = require('xml2js');
+var logthis = require('./logthis');
 
 var tvdb_baseuri = "https://api.thetvdb.com";
 var tvdb_apikey = "DE1C5FD2150BEE8D";
@@ -38,15 +39,15 @@ function tvdb_auth(_cbx) {
 				if(body.token) {
 					// we got the token! save it for later
 					tvdb_token = body.token;
-					console.log("Authenticated to thetvdb OK; bearer token: "+tvdb_token);
+					logthis.verbose("Authenticated to thetvdb OK; bearer token: %s", tvdb_token);
 					trequest = trequest.defaults({ headers: { 'Authorization': "Bearer "+tvdb_token } });
 					_cbx(null);
 				} else {
-					console.log("ERROR: Unexpected response data; data: ",body);
+					logthis.error("Unexpected response data", { body: body });
 					_cbx(body.Error);
 				}
 			} else {
-				console.log("ERROR: Failed to authenticate to thetvdb; response code: "+resp.statusCode);
+				logthis.error("Failed to authenticate to thetvdb", { statusCode: resp.statusCode, body: body });
 				_cbx(body.Error);
 			}
 		});
@@ -58,16 +59,16 @@ function tvdb_search(qseries, _cbx) {
 		if(!err) {
 			trequest({ uri: '/search/series', qs: { name: qseries } }, function(err,resp,body) {
 				if(resp.statusCode == 200) {
-					console.log("got "+body.data.length+" results from tvdb:",body);
+					logthis.verbose("got %d results from tvdb", body.data.length, { qseries: qseries, body: body });
 					_cbx({ status: "ok", results: body.data });
 				} else if(resp.statusCode == 404) {
-					console.log("tvdb query returned no results");
+					logthis.warning("tvdb query returned 404 No Results", { qseries: qseries });
 					_cbx({ status: "ok", results: [] });
 				} else if(resp.statusCode == 401) {
-					console.log("ERROR: 401 Unauthorized");
+					logthis.warning("tvdb returned 401 Unauthorized");
 					_cbx({ status: "error", error: "Unauthorized", results: [] });
 				} else {
-					console.log("ERROR: thetvdb query failed; response code: "+resp.statusCode);
+					logthis.warning("thetvdb query failed; response code: "+resp.statusCode);
 					_cbx({ status: "error", error: "Server error: "+body.Error, results: [] });
 				}
 			});
@@ -84,13 +85,13 @@ function tvdb_get_series_v2(serid, _cbx) {
 			trequest({ uri: '/series/'+serid }, function(err,resp,body) {
 				if(resp.statusCode == 200) {
 					var serdata = body.data;
-					console.log("got series data OK");
+					logthis.verbose("got series data OK");
 					// get episodes
 					tvdb_get_episodes_v2(serid, 1, [], function(epdata) {
 						_cbx({ status: "ok", serdata: serdata, episodes: epdata });
 					});
 				} else {
-					console.log("ERROR: thetvdb query failed; response code: "+resp.statusCode);
+					logthis.warning("thetvdb query failed", { serid: serid, statusCode: resp.statusCode, body: body });
 					_cbx({ status: "error", error: "Server error: "+body.Error });
 				}
 			});
@@ -107,14 +108,14 @@ function tvdb_get_episodes_v2(serid, page, lastdata, _cbx) {
 			trequest({ uri: '/series/'+serid+'/episodes', qs: { page: page } }, function(err,resp,body) {
 				if(resp.statusCode == 200) {
 					var newdata = lastdata.concat(body.data);
-					console.log("got "+body.data.length+" episodes from tvdb. next = "+body.links.next);
+					logthis.verbose("got %d episodes from tvdb. next: %s ", body.data.length, body.links.next);
 					if(body.links.next) {
 						tvdb_get_episodes_v2(serid, body.links.next, newdata, _cbx);
 					} else {
 						_cbx(newdata);
 					}
 				} else {
-					console.log("ERROR: thetvdb query failed; response code: "+resp.statusCode);
+					logthis.warning("thetvdb query failed", { serid: serid, statusCode: resp.statusCode, body: body });
 					_cbx({ status: "error", error: "Server error: "+body.Error, results: [] });
 				}
 			});
@@ -126,27 +127,27 @@ function tvdb_get_episodes_v2(serid, page, lastdata, _cbx) {
 
 function tvdb_get_series(serid, _cbx) {
 	// get episodes
-	console.log("fetching tvdb data for series ID '"+serid+"'");
+	logthis.verbose("fetching tvdb data for series ID '%s'", serid);
 	xrequest({ uri: '/series/'+serid+'/all/en.xml' }, function(err,resp,body) {
 		if(resp.statusCode == 200) {
-			console.log("got series data from tvdb; parsing XML response");
+			logthis.debug("got series data from tvdb; parsing XML response");
 			// decode XML response
 			xml2js.parseString(body, function(err,result) {
 				if(!err) {
 					// get data from result
-					console.log("raw XML response:",result);
+					logthis.debug("raw decoded XML response", { result: result });
 					var xdata = result.Data;
 					tvdb_process(xdata, function(outdata) {
-						console.log("Retrieved series, episode, and banner data OK. data:",outdata);
+						logthis.verbose("Retrieved series, episode, and banner data OK", { serid: serid, outdata: outdata });
 						_cbx({ status: "ok", result: outdata });
 					});
 				} else {
-					console.log("ERROR: failed to parse XML response from tvdb; error: ",err);
+					logthis.warning("failed to parse XML response from tvdb", { error: err });
 					_cbx({ status: "error", error: "Failed to parse XML response" });
 				}
 			});
 		} else {
-			console.log("ERROR: thetvdb query failed; response code: "+resp.statusCode);
+			logthis.warning("thetvdb query failed", { serid: serid, statusCode: resp.statusCode, body: body });
 			_cbx({ status: "error", error: "Server error: "+body });
 		}
 	});
@@ -204,12 +205,12 @@ function tvdb_get_artwork(serid, adefs, _cbx) {
 	var xdout = { banners: [], fanart: [], poster: [], season: [] };
 	xrequest({ uri: '/series/'+serid+'/banners.xml' }, function(err,resp,body) {
 		if(resp.statusCode == 200) {
-			console.log("got banner data from tvdb; parsing XML response");
+			logthis.debug("got banner data from tvdb; parsing XML response", { serid: serid });
 			// decode XML response
 			xml2js.parseString(body, function(err,result) {
 				if(!err) {
 					// get data from result
-					console.log("raw XML response:",result);
+					logthis.debug("raw decoded XML response", { result: result });
 					var blist = result.Banners.Banner;
 					for(bi in blist) {
 						var bb = fix_xml_result(blist[bi]);
@@ -233,18 +234,18 @@ function tvdb_get_artwork(serid, adefs, _cbx) {
 							}
 							xdout[bantype].push(tart);
 						} else {
-							console.log("WARNING: unknown banner type encountered. bantype = "+bantype);
+							logthis.warning("unknown banner type encountered. bantype: %s", bantype);
 						}
 					}
 
 					_cbx(xdout);
 				} else {
-					console.log("ERROR: failed to parse XML response from tvdb; error: ",err);
+					logthis.warning("failed to parse XML response from tvdb", { error: err });
 					_cbx(null);
 				}
 			});
 		} else {
-			console.log("ERROR: thetvdb query failed; response code: "+resp.statusCode);
+			logthis.warning("thetvdb query failed", { serid: serid, statusCode: resp.statusCode, body: body });
 			_cbx(null);
 		}
 	});

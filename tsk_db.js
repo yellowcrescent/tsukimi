@@ -16,19 +16,20 @@
 
 var MongoClient = require('mongodb').MongoClient;
 var events = require('events');
+var logthis = require('./logthis');
 
 var emitter = new events.EventEmitter();
 var monjer = false;
 
 function connect(conx) {
-	console.log("Connecting to MongoDB: "+conx);
+	logthis.verbose("Connecting to MongoDB: %s", conx);
 	MongoClient.connect(conx, function(err,db) {
 		if(!err) {
-			console.log("Connected to Mongo OK");
+			logthis.info("Connected to Mongo OK");
 			monjer = db;
 			emitter.emit('db_connect_ok');
 		} else {
-			console.log("Failed to connect to Mongo database");
+			logthis.error("Failed to connect to Mongo database",{ error: err });
 			monjer = false;
 			emitter.emit('db_connect_fail');
 		}
@@ -38,9 +39,9 @@ function connect(conx) {
 function close() {
 	if(monjer) {
 		monjer.close();
-		console.log("Connection to Mongo closed");
+		logthis.verbose("Connection to Mongo closed");
 	} else {
-		console.log("Connection to Mongo not active");
+		logthis.debug("Connection to Mongo not active");
 	}
 	emitter.emit('db_close');
 }
@@ -83,7 +84,7 @@ function get_episode_byid(id, _cbx) {
 
 function query_files(qparams, _cbx) {
 	monjer.collection('files').find(qparams).toArray(function(err, docs) {
-		console.log("query_files: returned "+docs.length+" files");
+		logthis.debug("query_files: returned %d files", docs.length);
 		_cbx(err, docs);
 	});
 }
@@ -99,17 +100,16 @@ function get_file_groups(_cbx) {
 
 	// run aggregation
 	monjer.collection('files').group({ tdex_id: 1 }, {}, { count: 0, new: 0, complete: 0 }, reducer, function(err,docs) {
-		console.log("get_file_groups: returned "+docs.length+" groups");
-		console.log("groups:",docs);
+		logthis.debug("get_file_groups: returned %d groups", docs.length, { err: err, docs: docs });
 		_cbx(err,docs);
 	});
 }
 
 function get_series_data(_cbx) {
 	monjer.collection('series').find({}).toArray(function(err,docs) {
-		if(err) console.log("ERROR: Failed to retrieve series data: "+err);
+		if(err) logthis.error("Failed to retrieve series data",{ err: err, docs: docs });
 
-		console.log("get_series_data: returned "+docs.length+" series");
+		logthis.debug("get_series_data: returned %d series", docs.length);
 
 		// build assoc array of series
 		var slist = {};
@@ -125,10 +125,10 @@ function get_series_data(_cbx) {
 function update_series(serid, indata, _cbx) {
 	monjer.collection('series').update({ _id: serid }, indata, function(err,rdoc) {
 		if(err) {
-			console.log("Failed to update series data for "+serid);
+			logthis.debug("Failed to update series data for %s", serid);
 			_cbx(err);
 		} else {
-			console.log("Wrote updated series data for "+serid);
+			logthis.debug("Wrote updated series data for %s", serid);
 			_cbx(null);
 		}
 	});
@@ -172,22 +172,23 @@ function add_series_full(sname, indata, _cbx) {
 		eplist.push(thisep);
 	}
 
-	console.log("eplist ready for insert:",eplist);
+	logthis.debug("eplist ready for insert",{ eplist: eplist });
 
 	// insert series data into Mongo
 	monjer.collection('series').insert(thisx, function(err,rec) {
 		if(!err) {
 			monjer.collection('episodes').insert(eplist, function(err,rec) {
 				if(!err) {
-					console.log("Inserted series and episode data into Mongo successfully!");
-					_cbx({ status: "ok", new_tdex: new_tdex, series_id: tser_id });
+					var xresp = { status: "ok", new_tdex: new_tdex, series_id: tser_id };
+					logthis.verbose("Inserted series and episode data into Mongo successfully", xresp);
+					_cbx(xresp);
 				} else {
-					console.log("ERROR: failed to insert episodes into Mongo. err:",err);
+					logthis.error("Failed to insert episodes into Mongo", { error: err, result: rec });
 					_cbx({ status: "error", error: err });
 				}
 			});
 		} else {
-			console.log("ERROR: failed to insert series into Mongo. err:",err);
+			logthis.error("Failed to insert series into Mongo", { error: err, result: rec });
 			_cbx({ status: "error", error: err });
 		}
 	});
@@ -213,7 +214,7 @@ function mkid_episode(sid, xdata) {
 function update_file_series(match, serid, _cbx) {
 	// retrieve files for update
 	monjer.collection('files').find(match).toArray(function(err,files) {
-		console.log("returned files =",files);
+		logthis.debug("returned files", { err: err, files: files });
 		// retrieve episodes for series
 		monjer.collection('episodes').find({ sid: serid }).toArray(function(err,eplist) {
 			// loop through all of the files and update the series_id and episode_id
@@ -221,7 +222,6 @@ function update_file_series(match, serid, _cbx) {
 			var newfiles = [];
 			for(ti in files) {
 				var tfile = files[ti];
-				console.log("ti="+ti+", tfile=",tfile);
 				tfile.series_id = serid;
 				tfile.episode_id = (eplist.filter(function(x) { return (parseInt(x.SeasonNumber) == parseInt(tfile.fparse.season) && parseInt(x.EpisodeNumber) == parseInt(tfile.fparse.episode) ? true : false); })[0]._id || null);
 				newfiles.push(tfile);
@@ -230,17 +230,17 @@ function update_file_series(match, serid, _cbx) {
 			// easier so that we don't need to create a seperate function to do this
 			// with a chain of callbacks to update every single entry
 			monjer.collection('files').remove(match, function(err,rdoc) {
-				if(!err) console.log("removed existing files without error");
-				else console.log("ERROR: error removing existing files")
+				if(!err) logthis.verbose("removed existing files without error");
+				else logthis.error("Error removing existing files", { error: err, result: rdoc})
 
 				// update files
 				monjer.collection('files').insert(newfiles, function(err,rdoc) {
-					if(!err) console.log("inserted updated file entries OK");
-					else console.log("ERROR: error when adding new file entries");
+					if(!err) logthis.verbose("inserted updated file entries OK");
+					else logthis.error("Error when adding new file entries", { error: err, result: rdoc});
 
 					// update series entry with correct count
 					monjer.collection('series').update({ '_id': serid }, { '$set': { count: fcount } }, function(err,rdoc) {
-						console.log("updated series file count OK");
+						logthis.verbose("updated series file count OK");
 						_cbx(null);
 					});
 				});

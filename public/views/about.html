@@ -8,6 +8,9 @@
 		<p>
 			Version <span ng-bind="tkversion.version"></span>
 			(<span ng-bind="tkversion.os"></span>/<span ng-bind="tkversion.arch"></span>)<br/>
+			<span ng-if="tkversion.git.ref">
+				Git commit <span ng-bind="tkversion.git.sref"></span> (<span ng-bind="tkversion.git.tstamp"></span>)<br />
+			</span>
 			Copyright &copy; 2014-2016 Jacob Hipps/Neo-Retro Group, Inc.<br/>
 			Licensed under Mozilla Public License 2.0<br/>
 			<b>https://tsukimi.io/</b><br/>

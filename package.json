@@ -1,6 +1,6 @@
 {
   "name": "tsukimi",
-  "version": "0.10.5",
+  "version": "0.10.6",
   "description": "tsukimi media browser",
   "main": "public/index.html",
   "node-main": "tsukimi.js",
@@ -20,7 +20,7 @@
     "anime"
   ],
   "scripts": {
-    "start": "nw --enable-logging=stderr"
+    "start": "nw"
   },
   "user-agent": "%name/%ver (%nwver; %osinfo)",
   "no-edit-menu": true,
@@ -48,6 +48,7 @@
     "mongodb": "^2.1.18",
     "request": "^2.72.0",
     "winston": "^2.2.0",
+    "winston-mongodb": "^1.5.0",
     "xml2js": "^0.4.16"
   }
 }
