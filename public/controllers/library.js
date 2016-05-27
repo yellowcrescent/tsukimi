@@ -301,6 +301,15 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 					$('#as_sericon').addClass('fa-search');
 					$('#as_serbtn').prop('disabled', false);
 					logthis.debug("got tvdb response", res);
+					var tsdata = $.map($scope.serdata, function(x) { return x; });
+					for(ts in res.results) {
+						var frez = tsdata.filter(function(x) { return x.xrefs.tvdb == res.results[ts].id; });
+						if(frez.length > 0) {
+							res.results[ts].exists = true;
+						} else {
+							res.results[ts].exists = false;
+						}
+					}
 					$scope.ssmodal.results = res.results;
 					_lib_scopeApply($scope);
 				});

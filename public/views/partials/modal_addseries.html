@@ -25,8 +25,8 @@
           <div class="tsk-asres">
             <table class="table tsk-asres-tab">
               <tbody>
-                <tr ng-repeat="tser in ssmodal.results track by tser.id" id="row_{{tser.id}}" class="tsk-tser-row">
-                  <td><input type="radio" ng-model="sersearch.tvsel" ng-change="ssmodal.inputChange(tser.id)" ng-value="tser.id" name="tvsel" id="tvsel_{{tser.id}}" /></td>
+                <tr ng-repeat="tser in ssmodal.results track by tser.id" id="row_{{tser.id}}" class="tsk-tser-row" ng-class="{success: tser.exists}">
+                  <td><input type="radio" ng-model="sersearch.tvsel" ng-change="ssmodal.inputChange(tser.id)" ng-value="tser.id" ng-disabled="tser.exists" name="tvsel" id="tvsel_{{tser.id}}" /></td>
                   <td ng-bind="tser.seriesName"></td>
                   <td ng-bind="tser.firstAired"></td>
                   <td ng-bind="tser.network"></td>
