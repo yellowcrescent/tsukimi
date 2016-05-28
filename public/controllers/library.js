@@ -143,12 +143,46 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 		// callback
 		$scope.modal.confirm = function() {
-			var slist = $('.fentry.selected');
-			logthis.debug("slist: %j", slist, {});
-			for(var ti = 0; ti < slist.length; ti++) {
-				logthis.debug("ignore: %j", slist[ti], {});
+			var slist;
+
+			// if nothing is selected, we've chosen 'Ignore All'
+			if($('.fentry.selected').length == 0) {
+				slist = $('.fentry');
+			} else {
+				slist = $('.fentry.selected');
 			}
-			$scope.modal.hide();
+
+			// get list of IDs
+			var ilist = [];
+			for(var tf = 0; tf < slist.length; tf++) {
+				// match file ID to flist (contains full file entry)
+				var tfid = slist[tf].id.replace(/^row\-/,'');
+				ilist.push($scope.flist.filter(function(x) { return x._id == tfid; })[0]);
+				logthis.debug("ignore file ID: %s", tfid);
+			}
+
+			var removalFunc = function(next, _cbx) {
+				var tff = ilist[next];
+				var tfpath = tff.location[tff.default_location].fpath.real;
+				// set user.xbake.ignore xattrib so the file is ignored in future scans
+				tkcore.fsutils.xattr_set_ignore(tfpath, function(xerr) {
+					// remove file from db.files collection
+					tkcore.db.remove_file(tff._id, function(xerr) {
+						logthis.verbose("Set ignore xattrib and removed file from database: %s", tff._id);
+						if(next < (ilist.length - 1)) {
+							removalFunc(next+1, _cbx);
+						} else {
+							_cbx();
+						}
+					});
+				});
+			};
+
+			removalFunc(0, function() {
+				$scope.modal.hide();
+				$scope.refresh();
+				logthis.debug("Finished ignoring files");
+			});
 		};
 
 	};

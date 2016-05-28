@@ -16,32 +16,45 @@
 
 var os = require('os');
 var child_process = require('child_process');
-var settings = require("./settings");
-var pkgdata = require("./package");
-var db = require("./tsk_db");
-var scrapers = require("./scrapers");
+var C = require('chalk');
+var settings = require('./settings');
+var pkgdata = require('./package');
+var db = require('./tsk_db');
+var scrapers = require('./scrapers');
 var scanner = require('./scanner');
+var fsutils = require('./fsutils');
 var logthis = require('./logthis');
-
-// banner
-process.stdout.write("tsukimi v"+pkgdata.version+"\n"+pkgdata.author+"\n"+pkgdata.copyright+"\nhttps://tsukimi.io/\nhttps://ycnrg.org\n\n");
-logthis.info("starting: tsukimi version %s", pkgdata.version);
 
 // get current commit ref and date
 var gitdata = gitInfo();
+
+// wave the banner
+process.stdout.write("\n");
+process.stdout.write(C.cyan(" ***   ") + C.white("tsukimi") + "\n");
+process.stdout.write(C.cyan(" ***   ") + C.cyan("Version "+pkgdata.version+(gitdata.ref ? " [Commit "+gitdata.sref+" - "+gitdata.tstamp+"]" : "")) + "\n");
+process.stdout.write(C.cyan(" ***   ") + C.green(pkgdata.copyright)+"\n");
+process.stdout.write(C.cyan(" ***   ") + C.green("J. Hipps <jacob@ycnrg.org>")+"\n");
+process.stdout.write(C.cyan(" ***   ") + C.yellow("https://tsukimi.io/") + "\n");
+process.stdout.write(C.cyan(" ***   ") + C.yellow("https://ycnrg.org/") + "\n\n");
+
+logthis.info("starting: tsukimi version %s", pkgdata.version);
 if(gitdata.ref) {
 	logthis.info("Git commit ref %s (%s)", gitdata.sref, gitdata.tstamp);
 } else {
 	logthis.info("Non-Git release");
 }
 
+// get framework versions
+var initInfo = { version: pkgdata.version, verdata: process.versions, git: gitdata,
+				 os: os.platform(), arch: os.arch(), hostname: os.hostname(), path: process.env.PATH };
+
 // Connect to Mongo
 db.connect(settings.mongo);
 
-
-function browserInit() {
-	var initInfo = { version: pkgdata.version, os: os.platform(), arch: os.arch(), hostname: os.hostname(), path: process.env.PATH, git: gitdata };
-	logthis.verbose("Connected to Node.js context from Browser context OK", initInfo);
+function browserInit(verData) {
+	logthis.info("NW.js v%s - <http://nwjs.io/>", verData.nw);
+	logthis.info("Chromium v%s - <https://www.chromium.org/>", verData.chromium);
+	logthis.info("Node.js v%s - <https://nodejs.org/>", process.versions['node']);
 	return initInfo;
 }
 
@@ -61,4 +74,5 @@ exports.browserInit		= browserInit;
 exports.db				= db;
 exports.scanner			= scanner;
 exports.scrapers		= scrapers;
+exports.fsutils			= fsutils;
 exports.logthis			= logthis;

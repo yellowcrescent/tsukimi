@@ -19,7 +19,7 @@
  **/
 
 var tkcore = require('./tsukimi');
-var tkversion = tkcore.browserInit();
+var tkversion = tkcore.browserInit(process.versions);
 var logthis = tkcore.logthis;
 
 /**

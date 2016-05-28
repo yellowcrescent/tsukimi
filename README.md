@@ -22,10 +22,10 @@ Licensed under MPLv2 <https://www.mozilla.org/en-US/MPL/2.0/>
 This assumes that Node.js, `npm`, Ruby 1.9+, and `gem` are already installed.
 
 For development, install the SDK build of NW.js, which allows using the Chromium Developer Tools.
-If you don't want/need the SDK build, remove the `--nwjs_build_type=sdk` option.
+If you don't want/need the SDK build, remove `-sdk` from the version string.
 
 ```
-sudo npm install -g nw --nwjs_build_type=sdk
+sudo npm install -g nw@0.15.0-sdk
 ```
 
 Install Sass & Compass
@@ -34,37 +34,57 @@ Install Sass & Compass
 sudo gem install compass
 ```
 
-Install Bower & Grunt-cli
+Install Build Tools
 
 ```
-sudo npm install -g bower grunt-cli
+sudo npm install -g bower grunt-cli nw-gyp nwbuild
 ```
 
 ### Fetch & Build
 
-Clone git repo from Bitbucket
+#### Clone git repo from Bitbucket
 
 ```
 git clone https://bitbucket.org/yellowcrescent/tsukimi
 cd tsukimi
 ```
 
-Install Node modules
+#### Install Node modules
 
 ```
 npm install
 ```
 
-Compile stylesheets
+#### Compile native modules
+
+Build `fs-xattr`
+
+```
+cd node_modules/fs-xattr
+nw-gyp configure --version=0.15.0 --target=node-webkit
+nw-gyp build
+```
+
+If you receive an error related to `openssl_fips` while configuring,
+open up `~/.nw-gyp/0.15.0/common.gyp` and comment out lines 43 to 47
+by prepending a hash (lines related to the `openssl_fips` condition check).
+We don't need OpenSSL support for building any of our modules, so it's OK.
+
+![](https://ss.ycnrg.org/jotunn_20160527_233435.png)
+
+#### Compile stylesheets
+
+From `tsukimi` base directory, run
 
 ```
 compass compile
 ```
 
-Install Bower components
+#### Install Bower components
+
+From `public/` directory, run
 
 ```
-cd public
 bower install
 ```
 

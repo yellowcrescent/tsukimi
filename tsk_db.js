@@ -82,6 +82,10 @@ function get_episode_byid(id, _cbx) {
 	monjer.collection('episodes').findOne({ "_id": String(id) }, _cbx);
 }
 
+function remove_file(id, _cbx) {
+	monjer.collection('files').remove({ _id: id }, _cbx);
+}
+
 function query_files(qparams, _cbx) {
 	monjer.collection('files').find(qparams).toArray(function(err, docs) {
 		logthis.debug("query_files: returned %d files", docs.length);
@@ -268,6 +272,7 @@ exports.get_series_byid		= get_series_byid;
 exports.query_episodes		= query_episodes;
 exports.get_episode			= get_episode;
 exports.get_episode_byid	= get_episode_byid;
+exports.remove_file			= remove_file;
 exports.query_files			= query_files;
 exports.get_file_groups		= get_file_groups;
 exports.get_series_data		= get_series_data;
