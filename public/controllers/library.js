@@ -154,13 +154,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 			}
 
 			// get list of IDs
-			var ilist = [];
-			for(var tf = 0; tf < slist.length; tf++) {
-				// match file ID to flist (contains full file entry)
-				var tfid = slist[tf].id.replace(/^row\-/,'');
-				ilist.push($scope.flist.filter(function(x) { return x._id == tfid; })[0]);
-				logthis.debug("ignore file ID: %s", tfid);
-			}
+			var ilist = _lib_get_flist_selection(slist, $scope.flist);
 
 			var removalFunc = function(next, _cbx) {
 				var tff = ilist[next];
@@ -355,13 +349,13 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		$scope.ssmodal.keydown = function(evt) {
 			logthis.debug("ssmodal keydown called; evt.code = %s; as_sersearch focus'd = %s",evt.code, $('#as_sersearch').is(':focus'));
 			if($('#as_sersearch').is(':focus')) {
-				if(evt.code == 'Enter') {
+				if(evt.code == 'Enter' || evt.code == 'NumpadEnter') {
 					$scope.ssmodal.search($scope.sersearch.qterm);
 					evt.preventDefault();
 					return false;
 				}
 			} else {
-				if(evt.code == 'Enter') {
+				if(evt.code == 'Enter' || evt.code == 'NumpadEnter') {
 					if($scope.sersearch.tvsel) {
 						$scope.ssmodal.confirm($scope.sersearch.tvsel);
 					}
@@ -419,6 +413,25 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 				_lib_scopeApply($scope);
 			});
 		});
+	};
+
+	$scope.addToSelection = function(infiles=null) {
+		// if flist was not passed in, use files selected by cursor
+		var flist;
+		if(infiles == null) {
+			flist = _lib_get_flist_selection($('.fentry.selected'), $scope.flist);
+		} else {
+			flist = infiles;
+		}
+
+		for(tf in flist) {
+			// ensure file doesn't already exist in selection
+			if($scope.selection.filter(function(x) { return x._id == flist[tf]._id; }).length == 0) {
+				$scope.selection.push(flist[tf]);
+				logthis.debug("Added file to working selection: %s", flist[tf]._id);
+			}
+		}
+		$scope.refresh();
 	};
 
 	$scope.refresh = function() {
@@ -530,7 +543,7 @@ function _lib_event_keydown(evt) {
 	if(tkversion.os == "darwin") delkey = "Backspace";
 
 	if($scope.hasFocus == 'modal' && $scope.modal.$isShown == true) {
-		if(evt.code == "Enter") {
+		if(evt.code == "Enter" || evt.code == "NumpadEnter") {
 			$scope.modal.confirm();
 		} else if(evt.code == "Escape") {
 			$scope.modal.hide();
@@ -571,6 +584,11 @@ function _lib_event_keydown(evt) {
 			// prevent default - required for Mac to prevent going 'back'
 			evt.preventDefault();
 			return false;
+		} else if(evt.code == "Enter" || evt.code == "NumpadEnter") {
+			// add to working selection
+			$scope.addToSelection();
+			evt.preventDefault();
+			return false;
 		}
 	} else if($scope.hasFocus == 'modal') {
 		if($scope.modal.keydown) $scope.modal.keydown(evt);
@@ -589,16 +607,23 @@ function _lib_rview_contextmenu(evt) {
 	}
 
 	if(iid) {
-		// deselect all; select this one
-		$('.selected').removeClass('selected');
-		$('#row-'+iid).addClass('selected');
-		$('#file-'+iid).prop('checked', true);
+		// determine if the file we right-clicked is already selected.
+		// if so, don't deselect the other elements (eg. might be part of a multi-select)
+		if(!$('#row-'+iid).hasClass('selected')) {
+			// nope, it was not already selected
+			// deselect all; select this one
+			$('.selected').removeClass('selected');
+			$('#row-'+iid).addClass('selected');
+			$('#file-'+iid).prop('checked', true);
+		}
 
 		var delkey = "Delete";
 		if(tkversion.os == "darwin") delkey = "Backspace";
 
 		// create context menu
 		var fmenu = new nw.Menu();
+		fmenu.append(new nw.MenuItem({ label: "Add to Selection", key: "Enter", click: $scope.addToSelection }));
+		fmenu.append(new nw.MenuItem({ type: 'separator' }));
 		fmenu.append(new nw.MenuItem({ label: "Properties..." }));
 		fmenu.append(new nw.MenuItem({ type: 'separator' }));
 		fmenu.append(new nw.MenuItem({ label: "Ignore", key: delkey, click: $scope.ignoreSelected }));
@@ -672,4 +697,14 @@ function _lib_scopeApply($scope) {
 		//console.log("[_lib_scopeApply] $$phase active, skipping $apply");
 		return false;
 	}
+}
+
+function _lib_get_flist_selection(slist, flist) {
+	var ilist = [];
+	for(var tf = 0; tf < slist.length; tf++) {
+		// match file ID to flist (contains full file entry)
+		var tfid = slist[tf].id.replace(/^row\-/,'');
+		ilist.push(flist.filter(function(x) { return x._id == tfid; })[0]);
+	}
+	return ilist;
 }
