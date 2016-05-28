@@ -459,3 +459,26 @@ body {
 	}
 }
 
+.ricon {
+	font-size: 14px;
+
+	&-default {
+		color: inherit;
+	}
+
+	&-red {
+		color: #e74c3c;
+	}
+
+	&-green {
+		color: #128f76;
+	}
+
+	&-blue {
+		color: #217dbb;
+	}
+
+	&-yellow {
+		color: #f39c12;
+	}
+}

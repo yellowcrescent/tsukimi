@@ -68,6 +68,7 @@
 				<tr class="fentry" ng-repeat="tf in flist" ng-click="flist_select($event, tf._id)" id="row-{{tf._id}}">
 					<td>
 						<input type="checkbox" name="file-{{tf._id}}" id="file-{{tf._id}}" />
+						<i class="fa ricon" ng-class="tf.__icon"></i>
 						{{tf.location[tf.default_location].fpath.file}}
 					</td>
 					<td>{{tf.fparse.season}}</td>

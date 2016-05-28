@@ -18,6 +18,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	logthis.debug("libraryController start");
 
 	$scope.flist = [];
+	$scope.selection = [];
 	$scope.hasFocus = null;
 	$scope.selected = null;
 	$scope.modeToggle = false;
@@ -434,6 +435,12 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 					$('#btn-refresh').removeClass("fa-spin");
 					return;
 				}
+
+				// calculate selections
+				for(ti in rez) {
+					rez[ti].importPending = $scope.selection.filter(function(x) { return x.tdex_id == rez[ti].tdex_id; }).length;
+				}
+
 				// build tree
 				_lib_build_tree(rez, sers);
 
@@ -461,11 +468,21 @@ function _lib_build_tree(indata, sdata) {
 	for(ti in indata) {
 		var tg = indata[ti];
 		var tsd = sdata[tg.series_id];
+		var ticon;
+
+		// map icon to entry
+		if(tg.complete == tg.count) ticon = 'fa-circle ricon-blue';
+		else if(tg.series_id == null) ticon = 'fa-exclamation-triangle ricon-red';
+		else if(tg.importPending == tg.count) ticon = 'fa-check-circle-o ricon-green';
+		else if(tg.importPending > 0 && tg.importPending < tg.count) ticon = 'fa-bullseye ricon-green';
+		else if(tg.new == tg.count) ticon = 'fa-circle-o ricon-default';
+		else ticon = 'fa-circle-o ricon-red';
+
 		var tnode = {
 						id: tg.tdex_id,
 						series_id: tg.series_id,
 						text: (tsd ? tsd.title : tg.tdex_id),
-						icon: "fa " + (tg.series_id ? "fa-circle-o" : "fa-exclamation-triangle")
+						icon: "fa " + ticon
 					}
 		ygg.push(tnode)
 	}
@@ -487,6 +504,16 @@ function _lib_populate_rview(vobj, $scope) {
 			docs[ti].sort_filename = docs[ti].location[docs[ti].default_location].fpath.file;
 		}
 		$scope.flist = docs;
+
+		// map icons to each file
+		for(ti in $scope.flist) {
+			var tff = $scope.flist[ti];
+			if(tff.status == 'complete') $scope.flist[ti].__icon = 'fa-circle ricon-blue';
+			else if($scope.selection.filter(function(x) { return x._id == tff._id; }).length) $scope.flist[ti].__icon = 'fa-check-circle-o ricon-green';
+			else if(tff.series_id == null || tff.episode_id == null) $scope.flist[ti].__icon = 'fa-exclamation-triangle ricon-red';
+			else $scope.flist[ti].__icon = 'fa-circle-o ricon-default';
+		}
+
 		$scope.reorder('sort_filename');
 		_lib_scopeApply($scope);
 
