@@ -51,9 +51,7 @@
     "request": "^2.72.0",
     "winston": "^2.2.0",
     "winston-mongodb": "^1.5.0",
-    "xml2js": "^0.4.16"
-  },
-  "devDependencies": {
+    "xml2js": "^0.4.16",
     "gulp": "^3.9.1",
     "gulp-bower": "0.0.13",
     "gulp-compass": "^2.1.0",

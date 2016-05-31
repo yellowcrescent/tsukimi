@@ -38,7 +38,7 @@ sudo npm install -g bower gulp nw-gyp nw-builder
 ```
 git clone https://bitbucket.org/yellowcrescent/tsukimi
 cd tsukimi
-npm install --dev
+npm install
 gulp
 ```
 
