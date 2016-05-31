@@ -14,6 +14,7 @@
  *
  *****************************************************************************/
 
+//var argv = require('minimist')(App.argv);
 var os = require('os');
 var child_process = require('child_process');
 var C = require('chalk');
@@ -43,6 +44,8 @@ if(gitdata.ref) {
 } else {
 	logthis.info("Non-Git release");
 }
+
+//logthis.verbose("command line: %j", argv, {});
 
 // get framework versions
 var initInfo = { version: pkgdata.version, verdata: process.versions, git: gitdata,

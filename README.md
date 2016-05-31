@@ -24,38 +24,38 @@ This assumes that Node.js, `npm`, Ruby 1.9+, and `gem` are already installed.
 For development, install the SDK build of NW.js, which allows using the Chromium Developer Tools.
 If you don't want/need the SDK build, remove `-sdk` from the version string.
 
+Compass and Sass will also be installed. These require Ruby 1.9+ and Rubygems to be installed.
+
 ```
 sudo npm install -g nw@0.15.0-sdk
-```
-
-Install Sass & Compass
-
-```
 sudo gem install compass
-```
-
-Install Build Tools
-
-```
-sudo npm install -g bower grunt-cli nw-gyp nwbuild
+sudo npm install -g bower gulp nw-gyp nw-builder
 ```
 
 ### Fetch & Build
 
-#### Clone git repo from Bitbucket
 
 ```
 git clone https://bitbucket.org/yellowcrescent/tsukimi
 cd tsukimi
+npm install --dev
+gulp
 ```
 
-#### Install Node modules
+If everything goes smoothly, you should now be able to run tsukimi after updating your `settings.json` file
+(see _Configure_ section below). To start tsukmi, make sure you're in the base source directory, then run:
 
 ```
-npm install
+nw
 ```
 
-#### Compile native modules
+
+#### Manually building dependencies
+
+Everything should be automagically built by Gulp. If for some reason that fails, or you
+need to build them yourself, instructions follow.
+
+__Compile native modules__
 
 Build `fs-xattr`
 
@@ -72,7 +72,7 @@ We don't need OpenSSL support for building any of our modules, so it's OK.
 
 ![](https://ss.ycnrg.org/jotunn_20160527_233435.png)
 
-#### Compile stylesheets
+__Compile stylesheets__
 
 From `tsukimi` base directory, run
 
@@ -80,9 +80,9 @@ From `tsukimi` base directory, run
 compass compile
 ```
 
-#### Install Bower components
+__Install Bower components__
 
-From `public/` directory, run
+From `tsukimi` base directory, run
 
 ```
 bower install
@@ -90,8 +90,15 @@ bower install
 
 ### Configure
 
-Create a JSON file in the installation base named `settings.json` and populate at least the
-following parameters (with common or example values shown below)
+First, copy the example configuration
+
+```
+cp settings.json.sample settings.json
+```
+
+Now edit the parameters as necessary. If you have MongoDB running locally, then the default
+values should work without modification. However, you will likely want to change the
+`data_dir` value, as this will be where images and other files will be saved.
 
 ```
 {
