@@ -24,7 +24,7 @@ var logger = new (winston.Logger)({
 	transports: [
 		new (winston.transports.Console)({
 			name: 'console-logger',
-			level: 'debug',
+			level: 'info',
 			colorize: true,
 			handleExceptions: true,
 			timestamp: function() {
@@ -49,9 +49,19 @@ var logger = new (winston.Logger)({
 			collection: 'log',
 			storeHost: true,
 			capped: true,
-			cappedMax: 1000000
+			cappedMax: 1000000,
+			silent: true
 		})
 	],
+	level: 'info',
+	levels: {
+		error:		0,
+		warn:		1,
+		info:		2,
+		verbose:	3,
+		debug:		4,
+		debug2:		5
+	},
 	exitOnError: false
 });
 
