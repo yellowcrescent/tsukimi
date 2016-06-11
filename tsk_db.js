@@ -104,6 +104,30 @@ function get_episode_data(sid, _cbx) {
 	});
 }
 
+function update_episode(epid, indata, _cbx) {
+	monjer.collection('episodes').update({ _id: epid }, indata, function(err,rdoc) {
+		if(err) {
+			logthis.debug("Failed to update episode data for %s", epid);
+			_cbx(err);
+		} else {
+			logthis.debug("Wrote updated episode data for %s", epid);
+			_cbx(null);
+		}
+	});
+}
+
+function update_file(id, indata, _cbx) {
+	monjer.collection('files').update({ _id: id }, indata, function(err,rdoc) {
+		if(err) {
+			logthis.debug("Failed to update file data for %s", id);
+			_cbx(err);
+		} else {
+			logthis.debug("Wrote updated file data for %s", id);
+			_cbx(null);
+		}
+	});
+}
+
 function remove_file(id, _cbx) {
 	monjer.collection('files').remove({ _id: id }, _cbx);
 }
@@ -302,6 +326,8 @@ exports.query_episodes		= query_episodes;
 exports.get_episode			= get_episode;
 exports.get_episode_byid	= get_episode_byid;
 exports.get_episode_data	= get_episode_data;
+exports.update_episode		= update_episode;
+exports.update_file			= update_file;
 exports.remove_file			= remove_file;
 exports.query_files			= query_files;
 exports.get_file_groups		= get_file_groups;

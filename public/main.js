@@ -87,6 +87,18 @@ tsukimi.run(['$rootScope','$location','$routeParams', function($rootScope, $loca
  * Utility functions
  **/
 
+function _copy(obj) {
+	return $.extend({}, obj);
+}
+
+function _deepCopy(obj) {
+	return $.extend(true, {}, obj);
+}
+
+function _jsonCopy(obj) {
+	return JSON.parse(JSON.stringify(obj));
+}
+
 // Allow multiple modals
 $(document).on('show.bs.modal', '.modal', function(evt) {
 	var zIndex = 1040 + (10 * $('.modal:visible').length);

@@ -224,9 +224,45 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 					$scope.modal = $modal({ title: iid, templateUrl: "/public/views/partials/modal_prop_file.html", scope: $scope });
 
 					$scope.modal.confirm = function() {
-						// TODO: save data
-						$scope.modal.hide();
-						$scope.refresh();
+						var pfails = [];
+
+						// copy and sterilize object
+						var nprop = _copy($scope.sprop);
+						delete nprop.seriesSelected;
+						delete nprop.episodeSelected;
+						delete nprop.serdata;
+						delete nprop.epdata;
+
+						// update fparse values according to selected episode
+						if($scope.sprop.epdata) {
+							nprop.fparse.series = $scope.sprop.serdata.title;
+							nprop.fparse.season = $scope.sprop.epdata.SeasonNumber;
+							nprop.fparse.episode = $scope.sprop.epdata.EpisodeNumber;
+						}
+
+						// update file data
+						logthis.debug2("commiting new file data", nprop);
+						tkcore.db.update_file(nprop._id, nprop, function(err) {
+							if(err) {
+								logthis.error("Failed to commit changes for file %s: %s", nprop._id, err);
+								pfails.push("Failed to save file changes: "+err);
+							}
+							// update episode data
+							logthis.debug2("commiting new episode data", $scope.epdata);
+							tkcore.db.update_episode($scope.sprop.epdata._id, $scope.sprop.epdata, function(err) {
+								if(err) {
+									logthis.error("Failed to commit changes for series %s: %s", nprop._id, err);
+									pfails.push("Failed to save series changes: "+err);
+								}
+								if(pfails.length > 0) {
+									$scope.scanStatus = { title: "Database Update", content: pfails[0], iconClassList: ['fa','fa-times'], show: true };
+								} else {
+									$scope.scanStatus = { title: "Database Update", content: "OK", iconClassList: ['fa','fa-check'], show: true };
+								}
+								$scope.modal.hide();
+								$scope.refresh();
+							});
+						});
 					};
 
 					// set up 'series_id' change callback
