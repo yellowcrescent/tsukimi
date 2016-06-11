@@ -13,6 +13,7 @@
  * @param       vim: set ts=4 sw=4 noexpandtab syntax=javascript:
  *
  *****************************************************************************/
+/* jshint -W083 */
 
 function libraryController($scope, $location, $routeParams, $http, $filter, $modal, $alert) {
 	logthis.debug("libraryController start");
@@ -98,7 +99,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		// update the 'select all' checkbox
 		var tot = $('.fentry').length;
 		var totSelected = $('.fentry.selected').length;
-		if(totSelected == 0) {
+		if(totSelected === 0) {
 			$('#file-all').prop('checked', false);
 			$('#file-all').prop('indeterminate', false);
 		} else if(totSelected == tot) {
@@ -147,7 +148,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 			var slist;
 
 			// if nothing is selected, we've chosen 'Ignore All'
-			if($('.fentry.selected').length == 0) {
+			if($('.fentry.selected').length === 0) {
 				slist = $('.fentry');
 			} else {
 				slist = $('.fentry.selected');
@@ -203,17 +204,80 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 	};
 
+	$scope.filePropDiag = function() {
+		$scope.hasFocus = 'modal';
+		var ilist = _lib_get_flist_selection($('.fentry.selected'), $scope.flist);
+		var iid = ilist[0]._id;
+		logthis.debug2("filePropDiag; id = %s", iid);
+
+		tkcore.db.get_series_data(function(slist) {
+			tkcore.db.get_file_data(iid, function(fdata) {
+				tkcore.db.get_episode_data(fdata.series_id, function(epdata) {
+					// build property data
+					$scope.sprop = fdata;
+					$scope.epdata = epdata;
+					$scope.serdata = slist;
+					$scope.sprop.serdata = $scope.sprop.seriesSelected = $scope.serdata[$scope.sprop.series_id];
+					$scope.sprop.epdata = $scope.sprop.episodeSelected = $scope.epdata[$scope.sprop.episode_id];
+
+					// build modal properties dialog
+					$scope.modal = $modal({ title: iid, templateUrl: "/public/views/partials/modal_prop_file.html", scope: $scope });
+
+					$scope.modal.confirm = function() {
+						// TODO: save data
+						$scope.modal.hide();
+						$scope.refresh();
+					};
+
+					// set up 'series_id' change callback
+					$scope.modal.seriesChange = function() {
+						logthis.debug2("seriesChange; series_id = %s",$scope.sprop.seriesSelected._id);
+						if($scope.sprop.seriesSelected !== null) {
+							$scope.sprop.series_id = $scope.sprop.seriesSelected._id;
+							$scope.sprop.serdata = $scope.serdata[$scope.sprop.series_id];
+							tkcore.db.get_episode_data($scope.sprop.series_id , function(epdata) {
+								$scope.epdata = epdata;
+								$scope.sprop.episode_id = null;
+								$scope.sprop.episodeSelected = { _id: null };
+								$scope.sprop.epdata = null;
+								_lib_scopeApply($scope);
+							});
+						} else {
+							$scope.sprop.series_id = null;
+							$scope.sprop.serdata = null;
+						}
+					};
+
+					// set up 'episode_id' change callback
+					$scope.modal.episodeChange = function() {
+						logthis.debug2("episodeChange; episode_id = %s",$scope.sprop.episodeSelected._id);
+						if($scope.sprop.episodeSelected !== null) {
+							$scope.sprop.episode_id = $scope.sprop.episodeSelected._id;
+							$scope.sprop.epdata = $scope.epdata[$scope.sprop.episode_id];
+						} else {
+							$scope.sprop.episode_id = null;
+							$scope.sprop.epdata = null;
+						}
+					};
+
+					_lib_scopeApply($scope);
+				});
+			});
+		});
+
+	};
+
 	$scope.seriesPropDiag = function() {
 		$scope.hasFocus = 'modal';
 		var ccf = $('#lib-tree').jstree(true).get_selected(true)[0].original;
 		var iid = ccf.id;
-		logthis.debug("seriesPropDiag; id = %s", iid);
+		logthis.debug2("seriesPropDiag; id = %s", iid);
 
 		tkcore.db.get_series_data(function(slist) {
 			// build property data
 			$scope.sprop = { tdex_id: ccf.id, orig_series: ccf.series_id, series_id: ccf.series_id, serdata: slist[ccf.series_id], seriesSelected: slist[ccf.series_id] };
 			$scope.serdata = slist;
-			logthis.debug("seriesPropDiag modal data", $scope.sprop);
+			logthis.debug2("seriesPropDiag modal data", $scope.sprop);
 
 			// build modal properties dialog
 			$scope.modal = $modal({ title: iid, templateUrl: "/public/views/partials/modal_prop_series.html", scope: $scope });
@@ -242,7 +306,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 			// set up 'series_id' change callback
 			$scope.modal.seriesChange = function() {
-				if($scope.sprop.seriesSelected != null) {
+				if($scope.sprop.seriesSelected !== null) {
 					$scope.sprop.series_id = $scope.sprop.seriesSelected._id;
 					$scope.sprop.serdata = $scope.serdata[$scope.sprop.series_id];
 				} else {
@@ -271,7 +335,10 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		});
 	};
 
-	$scope.seriesSearch = function(tdexId=null,_cbx=null) {
+	$scope.seriesSearch = function(tdexId, _cbx) {
+		if(typeof tdexId == 'undefined') tdexId = null;
+		if(typeof _cbx == 'undefined') _cbx = null;
+
 		$scope.hasFocus = 'ssmodal';
 
 		// initialize sersearch obj
@@ -415,10 +482,12 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		});
 	};
 
-	$scope.addToSelection = function(infiles=null) {
+	$scope.addToSelection = function(infiles) {
+		if(typeof infiles == 'undefined') infiles = null;
+
 		// if flist was not passed in, use files selected by cursor
 		var flist;
-		if(infiles == null) {
+		if(infiles === null) {
 			flist = _lib_get_flist_selection($('.fentry.selected'), $scope.flist);
 		} else {
 			flist = infiles;
@@ -426,7 +495,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 		for(tf in flist) {
 			// ensure file doesn't already exist in selection
-			if($scope.selection.filter(function(x) { return x._id == flist[tf]._id; }).length == 0) {
+			if($scope.selection.filter(function(x) { return x._id == flist[tf]._id; }).length === 0) {
 				$scope.selection.push(flist[tf]);
 				logthis.debug("Added file to working selection: %s", flist[tf]._id);
 			}
@@ -485,7 +554,7 @@ function _lib_build_tree(indata, sdata) {
 
 		// map icon to entry
 		if(tg.complete == tg.count) ticon = 'fa-circle ricon-blue';
-		else if(tg.series_id == null) ticon = 'fa-exclamation-triangle ricon-red';
+		else if(tg.series_id === null) ticon = 'fa-exclamation-triangle ricon-red';
 		else if(tg.importPending == tg.count) ticon = 'fa-check-circle-o ricon-green';
 		else if(tg.importPending > 0 && tg.importPending < tg.count) ticon = 'fa-bullseye ricon-green';
 		else if(tg.new == tg.count) ticon = 'fa-circle-o ricon-default';
@@ -496,8 +565,8 @@ function _lib_build_tree(indata, sdata) {
 						series_id: tg.series_id,
 						text: (tsd ? tsd.title : tg.tdex_id),
 						icon: "fa " + ticon
-					}
-		ygg.push(tnode)
+					};
+		ygg.push(tnode);
 	}
 
 	if($('#lib-tree').jstree(true).settings) {
@@ -523,7 +592,7 @@ function _lib_populate_rview(vobj, $scope) {
 			var tff = $scope.flist[ti];
 			if(tff.status == 'complete') $scope.flist[ti].__icon = 'fa-circle ricon-blue';
 			else if($scope.selection.filter(function(x) { return x._id == tff._id; }).length) $scope.flist[ti].__icon = 'fa-check-circle-o ricon-green';
-			else if(tff.series_id == null || tff.episode_id == null) $scope.flist[ti].__icon = 'fa-exclamation-triangle ricon-red';
+			else if(tff.series_id === null || tff.episode_id === null) $scope.flist[ti].__icon = 'fa-exclamation-triangle ricon-red';
 			else $scope.flist[ti].__icon = 'fa-circle-o ricon-default';
 		}
 
@@ -542,7 +611,7 @@ function _lib_event_keydown(evt) {
 	var delkey = "Delete";
 	if(tkversion.os == "darwin") delkey = "Backspace";
 
-	if($scope.hasFocus == 'modal' && $scope.modal.$isShown == true) {
+	if($scope.hasFocus == 'modal' && $scope.modal.$isShown === true) {
 		if(evt.code == "Enter" || evt.code == "NumpadEnter") {
 			$scope.modal.confirm();
 		} else if(evt.code == "Escape") {
@@ -552,7 +621,7 @@ function _lib_event_keydown(evt) {
 		var llen = $('.fentry').length;
 
 		if(evt.code == "ArrowDown" || evt.code == "ArrowUp") {
-			if($scope.selected == null) {
+			if($scope.selected === null) {
 				// if nothing previously selected, choose first entry (up or down)
 				$scope.flist_select(evt, $('.fentry')[0].id.split('-')[1]);
 			} else {
@@ -572,13 +641,13 @@ function _lib_event_keydown(evt) {
 		} else if(evt.code == "End") {
 			// choose last entry
 			$scope.flist_select(evt, $('.fentry')[llen-1].id.split('-')[1]);
-		} else if(evt.code == delkey && evt.shiftKey == false) {
+		} else if(evt.code == delkey && evt.shiftKey === false) {
 			// ignore selected
 			$scope.ignoreSelected();
 			// prevent default - required for Mac to prevent going 'back'
 			evt.preventDefault();
 			return false;
-		} else if(evt.code == delkey && evt.shiftKey == true) {
+		} else if(evt.code == delkey && evt.shiftKey === true) {
 			// delete selected
 			$scope.deleteSelected();
 			// prevent default - required for Mac to prevent going 'back'
@@ -624,7 +693,7 @@ function _lib_rview_contextmenu(evt) {
 		var fmenu = new nw.Menu();
 		fmenu.append(new nw.MenuItem({ label: "Add to Selection", key: "Enter", click: $scope.addToSelection }));
 		fmenu.append(new nw.MenuItem({ type: 'separator' }));
-		fmenu.append(new nw.MenuItem({ label: "Properties..." }));
+		fmenu.append(new nw.MenuItem({ label: "Properties...", click: $scope.filePropDiag }));
 		fmenu.append(new nw.MenuItem({ type: 'separator' }));
 		fmenu.append(new nw.MenuItem({ label: "Ignore", key: delkey, click: $scope.ignoreSelected }));
 		fmenu.append(new nw.MenuItem({ label: "Delete", key: delkey, modifiers: "shift", click: $scope.deleteSelected }));

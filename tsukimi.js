@@ -111,7 +111,7 @@ function tskParseArgs(args) {
 
 	// config file
 	if(opts.config) {
-		xconf.config_files.push(opts.config)
+		xconf.config_files.push(opts.config);
 	}
 
 	logthis.debug("raw args: %j", opts, {});

@@ -13,6 +13,7 @@
  * @param       vim: set ts=4 sw=4 noexpandtab syntax=javascript:
  *
  *****************************************************************************/
+/* jshint -W030 */
 
 var settings = require("./settings");
 var C = require('chalk');
@@ -56,7 +57,7 @@ var logger = new (winston.Logger)({
 	level: 'info',
 	levels: {
 		error:		0,
-		warn:		1,
+		warning:	1,
 		info:		2,
 		verbose:	3,
 		debug:		4,

@@ -36,12 +36,13 @@ exports.xbake_scandir = function(indir, _cbx) {
 	var xbake = child_process.spawn('yc_xbake', [ '--tsukimi', '--scan', indir ] );
 
 	// set up event listeners
+	var odata;
 	xbake.stderr.on('data', function(data) {
 		//console.log("[yc_xbake] stderr: "+data.toString());
 		try {
-			var odata = JSON.parse(data.toString());
+			odata = JSON.parse(data.toString());
 		} catch(e) {
-			var odata = { msgtype: '_raw', data: data.toString() };
+			odata = { msgtype: '_raw', data: data.toString() };
 		}
 		_cbx(odata);
 	});
@@ -50,4 +51,4 @@ exports.xbake_scandir = function(indir, _cbx) {
 		_cbx({ msgtype: "_close", exitcode: exitCode });
 	});
 
-}
+};

@@ -1,0 +1,70 @@
+
+<div id="mdiag" class="modal">
+  <div class="modal-dialog tsk-diag-wide">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true" ng-click="$hide()">&times;</button>
+        <h4 class="modal-title" ng-bind="title"></h4>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="form-group col-xs-6">
+            <label for="sprop_tdex_id">Group ID</label>
+            <input type="text" class="form-control" id="sprop_tdex_id" ng-model="sprop.tdex_id" />
+            <p class="help-block">tdex_id</p>
+          </div>
+          <div class="form-group col-xs-6">
+            <label for="sprop_status">Status</label>
+            <p class="form-control-static" id="sprop_status" ng-bind="sprop.status"></p>
+            <p class="help-block">status</p>
+          </div>
+
+          <div class="form-group col-xs-6 clearboth">
+            <label for="sprop_series_id">Series ID</label>
+            <select class="form-control" id="sprop_series_id" ng-change="modal.seriesChange()"
+            ng-model="sprop.seriesSelected" ng-options="option.title for option in serdata track by option._id">
+              <option value=""></option>
+            </select>
+            <p class="help-block">series_id</p>
+          </div>
+          <div class="form-group col-xs-6">
+            <label for="sprop_episode_id">Episode ID</label>
+            <select class="form-control" id="sprop_episode_id" ng-change="modal.episodeChange()"
+            ng-model="sprop.episodeSelected" ng-options="option._id for option in epdata track by option._id">
+              <option value=""></option>
+            </select>
+            <p class="help-block">series_id</p>
+          </div>
+
+          <div ng-if="sprop.epdata">
+            <div class="form-group col-xs-12">
+              <label for="sprop_eptitle">Title</label>
+              <input type="text" class="form-control" id="sprop_eptitle" ng-model="sprop.epdata.EpisodeName" />
+              <p class="help-block">EpisodeName</p>
+            </div>
+            <div class="form-group col-xs-3">
+              <label for="sprop_season">Season</label>
+              <input type="text" class="form-control" id="sprop_season" ng-model="sprop.epdata.SeasonNumber" />
+              <p class="help-block">SeasonNumber</p>
+            </div>
+            <div class="form-group col-xs-3">
+              <label for="sprop_episode">Episode</label>
+              <input type="text" class="form-control" id="sprop_episode" ng-model="sprop.epdata.EpisodeNumber" />
+              <p class="help-block">EpisodeNumber</p>
+            </div>
+
+            <div class="form-group col-xs-6 clearboth">
+              <label for="sprop_tvdb">TVDb ID</label>
+              <input type="text" class="form-control" id="sprop_tvdb" ng-model="sprop.epdata.tvdb_id" />
+              <p class="help-block">tvdb_id</p>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="$hide()">Cancel</button>
+        <button type="button" class="btn btn-success" ng-click="modal.confirm()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -271,3 +271,7 @@ function fix_xml_result(inarr) {
 
 exports.tvdb_search			= tvdb_search;
 exports.tvdb_get_series		= tvdb_get_series;
+
+exports.__tvdb_auth			= tvdb_auth;
+exports.__tvdb_token		= tvdb_token;
+exports.__tvdb_apikey		= tvdb_apikey;

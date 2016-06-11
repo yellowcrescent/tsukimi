@@ -1,0 +1,10 @@
+{
+	"predef": [ "nw", "ng" ],
+	"browser": true,
+	"node": true,
+	"jquery": true,
+	"mocha": true,
+
+	"sub": true,
+	"-W088": true
+}

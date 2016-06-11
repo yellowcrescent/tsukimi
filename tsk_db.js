@@ -13,6 +13,8 @@
  * @param       vim: set ts=4 sw=4 noexpandtab syntax=javascript:
  *
  *****************************************************************************/
+/* jshint -W083 */
+/* jshint -W049 */
 
 var MongoClient = require('mongodb').MongoClient;
 var events = require('events');
@@ -79,7 +81,27 @@ function get_episode(qparams, _cbx) {
 }
 
 function get_episode_byid(id, _cbx) {
-	monjer.collection('episodes').findOne({ "_id": String(id) }, _cbx);
+	monjer.collection('episodes').findOne({ _id: id }, function(err, docs) {
+		if(err) logthis.error("Failed to retrieve episode data",{ err: err, docs: docs });
+		_cbx(docs);
+	});
+}
+
+function get_episode_data(sid, _cbx) {
+	monjer.collection('episodes').find({ sid: sid }).toArray(function(err,docs) {
+		if(err) logthis.error("Failed to retrieve episode data",{ err: err, docs: docs });
+
+		logthis.debug("get_episode_data: returned %d episodes", docs.length);
+
+		// build assoc array of series
+		var slist = {};
+		for(si in docs) {
+			var tdoc = docs[si];
+			slist[tdoc['_id']] = tdoc;
+		}
+
+		_cbx(slist);
+	});
 }
 
 function remove_file(id, _cbx) {
@@ -90,6 +112,13 @@ function query_files(qparams, _cbx) {
 	monjer.collection('files').find(qparams).toArray(function(err, docs) {
 		logthis.debug("query_files: returned %d files", docs.length);
 		_cbx(err, docs);
+	});
+}
+
+function get_file_data(id, _cbx) {
+	monjer.collection('files').findOne({ _id: id }, function(err, docs) {
+		if(err) logthis.error("Failed to retrieve file data",{ err: err, docs: docs });
+		_cbx(docs);
 	});
 }
 
@@ -207,11 +236,11 @@ function mkid_series(sid, xdata) {
 	} else {
 		dyear = "90" + String(parseInt(Date.now() / 1000)).substr(-5);
 	}
-	return sid + "." + dyear
+	return sid + "." + dyear;
 }
 
 function mkid_episode(sid, xdata) {
-	var isuf = (xdata.id || String(Date.now() / 1000000.0).split('.')[1])
+	var isuf = (xdata.id || String(Date.now() / 1000000.0).split('.')[1]);
 	return sid + "." + (String(xdata.SeasonNumber) || '0') + "." + (String(xdata.EpisodeNumber) || '0') + "." + isuf;
 }
 
@@ -235,7 +264,7 @@ function update_file_series(match, serid, _cbx) {
 			// with a chain of callbacks to update every single entry
 			monjer.collection('files').remove(match, function(err,rdoc) {
 				if(!err) logthis.verbose("removed existing files without error");
-				else logthis.error("Error removing existing files", { error: err, result: rdoc})
+				else logthis.error("Error removing existing files", { error: err, result: rdoc});
 
 				// update files
 				monjer.collection('files').insert(newfiles, function(err,rdoc) {
@@ -272,6 +301,7 @@ exports.get_series_byid		= get_series_byid;
 exports.query_episodes		= query_episodes;
 exports.get_episode			= get_episode;
 exports.get_episode_byid	= get_episode_byid;
+exports.get_episode_data	= get_episode_data;
 exports.remove_file			= remove_file;
 exports.query_files			= query_files;
 exports.get_file_groups		= get_file_groups;
@@ -279,3 +309,4 @@ exports.get_series_data		= get_series_data;
 exports.add_series_full		= add_series_full;
 exports.update_file_series	= update_file_series;
 exports.update_series		= update_series;
+exports.get_file_data		= get_file_data;

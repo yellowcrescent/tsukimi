@@ -15,6 +15,9 @@ var gulp = require('gulp');
 var compass = require('gulp-compass');
 var gutil = require('gulp-util');
 var bower = require('gulp-bower');
+var jshint = require('gulp-jshint');
+var jshintBamboo = require('gulp-jshint-bamboo');
+var jshintSummary = require('jshint-stylish-summary');
 var C = gutil.colors;
 var spawn = require('child_process').spawnSync;
 var basedir = process.cwd();
@@ -28,7 +31,7 @@ gulp.task('compass', function() {
 			css: 'public/css',
 			image: 'public/img',
 			sass: 'sass'
-		}))
+		}));
 });
 
 gulp.task('bower', function() {
@@ -61,5 +64,18 @@ gulp.task('buildmods', function() {
 	}
 });
 
+// linting task
+var jsource = [ '*.js', 'public/*.js', 'public/controllers/*.js' ];
+var jreporter = 'jshint-stylish';
+
+gulp.task('lint', function() {
+	return gulp.src(jsource, { base: './' })
+			.pipe(jshint('.jshintrc'))
+			.pipe(jshint.reporter(jreporter))
+			.pipe(jshintSummary.collect())
+			.pipe(jshint.reporter('fail'))
+			.on('end', jshintSummary.summarize());
+});
+
 // default task
-gulp.task('default', [ 'bower', 'compass', 'buildmods' ]);
+gulp.task('default', [ 'lint', 'bower', 'compass', 'buildmods' ]);
