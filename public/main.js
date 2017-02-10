@@ -21,6 +21,7 @@
 var tkcore = require('./tsukimi');
 var tkversion = tkcore.browserInit(process.versions, nw.App.argv);
 var logthis = tkcore.logthis;
+var tkconfig = tkcore.settings;
 
 /**
  * AngularJS bootstrap and dependency injection
@@ -107,3 +108,10 @@ $(document).on('show.bs.modal', '.modal', function(evt) {
 		$('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
 	}, 0);
 });
+
+
+/**
+ * Globals
+ **/
+
+var tskGroupList = tkconfig.groups;

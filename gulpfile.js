@@ -18,6 +18,7 @@ var bower = require('gulp-bower');
 var jshint = require('gulp-jshint');
 var jshintBamboo = require('gulp-jshint-bamboo');
 var jshintSummary = require('jshint-stylish-summary');
+var NwBuilder = require('nw-builder');
 var C = gutil.colors;
 var spawn = require('child_process').spawnSync;
 var basedir = process.cwd();
@@ -77,5 +78,60 @@ gulp.task('lint', function() {
 			.on('end', jshintSummary.summarize());
 });
 
+// build Mac ICNS
+gulp.task('icon_icns', function() {
+	// output icns file, followed by n-number of power-of-two png icons
+	var icnsArgs = [ "tsukimi.icns", "tsukimi_icon.png" ];
+	var sout = spawn('png2icns', icnsArgs);
+	if(sout.error || sout.status) {
+		gutil.log(C.red("Failed to build Mac icns file: "+sout.error));
+		gutil.log("Program output:");
+		console.dir(sout);
+	}
+	gutil.log("Mac icns file compiled OK");
+});
+
+// build Windows ICO
+gulp.task('icon_ico', function() {
+	// output ico file, followed by n-number of power-of-two png icons
+	var icoArgs = [ "-c", "-o", "tsukimi.ico", "tsukimi_icon.png" ];
+	var sout = spawn('icotool', icoArgs);
+	if(sout.error || sout.status) {
+		gutil.log(C.red("Failed to build Windows ico file: "+sout.error));
+		gutil.log("Program output:");
+		console.dir(sout);
+	}
+	gutil.log("Windows ico file compiled OK");
+});
+
+// nwbuilder task
+gulp.task('nwbuilder', function() {
+	var nw = new NwBuilder({
+		appName: "tsukimi",
+		appVersion: pkgdata.version,
+		version: pkgdata.nw_version,
+		cacheDir: './.cache',
+		buildType: 'versioned',
+		flavor: 'normal',
+		files: ['package.json', './node_modules', './*.js', './public/**'],
+		macIcns: 'tsukimi.icns',
+		winIco: 'tsukimi.ico',
+		macPlist: {mac_bundle_id: 'com.ycnrg.tsukimi'},
+		platforms: ['win32', 'win64', 'osx64', 'linux64']
+	});
+
+	// Log stuff you want
+	nw.on('log', function (msg) {
+		gutil.log('nw-builder', msg);
+	});
+
+	// Build returns a promise, return it so the task isn't called in parallel
+	return nw.build().catch(function (err) {
+		gutil.log('nw-builder', err);
+	});
+});
+
 // default task
 gulp.task('default', [ 'lint', 'bower', 'compass', 'buildmods' ]);
+gulp.task('build', [ 'icon_icns', 'icon_ico', 'nwbuilder' ]);
+gulp.task('buildall', [ 'lint', 'bower', 'compass', 'buildmods', 'icon_icns', 'icon_ico', 'nwbuilder' ]);

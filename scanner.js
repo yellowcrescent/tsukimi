@@ -33,7 +33,7 @@ exports.xbake_scandir = function(indir, _cbx) {
 	}
 
 	// spawn XBake process
-	var xbake = child_process.spawn('yc_xbake', [ '--tsukimi', '--scan', indir ] );
+	var xbake = child_process.spawn('xbake', [ '--tsukimi', '--scan', indir ] );
 
 	// set up event listeners
 	var odata;
@@ -51,4 +51,29 @@ exports.xbake_scandir = function(indir, _cbx) {
 		_cbx({ msgtype: "_close", exitcode: exitCode });
 	});
 
+};
+
+exports.xbake_vscap = function(fpath, fid, offset, _cbx) {
+	var vscap_data = null;
+	var xbake = child_process.spawn('xbake', [ '--tsukimi', '--noupdate', '--id', fid, '--vscap', offset, '--ssonly', fpath ] );
+
+	xbake.stderr.on('data', function(data) {
+		var odata;
+
+		try {
+			odata = JSON.parse(data.toString());
+		} catch(e) {
+			odata = { msgtype: '_raw', data: data.toString() };
+		}
+
+		if(odata.msgtype == 'output') {
+			if(odata.event == 'vscap') {
+				vscap_data = odata.output;
+			}
+		}
+	});
+
+	xbake.on('close', function(exitCode) {
+		_cbx(vscap_data);
+	});
 };

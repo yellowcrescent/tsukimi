@@ -27,9 +27,10 @@ If you don't want/need the SDK build, remove `-sdk` from the version string.
 Compass and Sass will also be installed. These require Ruby 1.9+ and Rubygems to be installed.
 
 ```
-sudo npm install -g nw@0.15.0-sdk
+sudo npm install -g nw@0.20.1-sdk
 sudo gem install compass
 sudo npm install -g bower gulp nw-gyp nw-builder
+sudo apt-get install icoutils icnsutils
 ```
 
 ### Fetch & Build
@@ -61,7 +62,7 @@ Build `fs-xattr`
 
 ```
 cd node_modules/fs-xattr
-nw-gyp configure --version=0.15.0 --target=node-webkit
+nw-gyp configure --version=0.20.1 --target=node-webkit
 nw-gyp build
 ```
 

@@ -1,29 +1,26 @@
 <!--routes/watch_home-->
 <div class="tsk-subnav">
-	<div id="subnav-tv" class="tsk-subnav-nav">
-		<a href="/public/index.html#/watch/tv">TV</a>
-	</div>
-	<div id="subnav-anime" class="tsk-subnav-nav">
-		<a href="/public/index.html#/watch/anime">Anime</a>
-	</div>
-	<div id="subnav-film" class="tsk-subnav-nav">
-		<a href="/public/index.html#/watch/film">Film</a>
-	</div>
-	<div id="subnav-doc" class="tsk-subnav-nav">
-		<a href="/public/index.html#/watch/doc">Documentary</a>
-	</div>
-	<div id="subnav-toon" class="tsk-subnav-nav">
-		<a href="/public/index.html#/watch/toon">Cartoon</a>
-	</div>
-	<div id="subnav-music" class="tsk-subnav-nav">
-		<a href="/public/index.html#/watch/music">Music Video</a>
+	<div id="subnav-tv" class="tsk-subnav-nav" ng-repeat="(gkey, gname) in group_list">
+		<a href="/public/index.html#/watch/{{gkey}}">{{gname}}</a>
 	</div>
 </div>
 
+<div id="recent-adds-header" class="tsk-epheader">
+	Recently Added
+</div>
 <div id="recent-adds" class="tsk-epgroup">
-	<div class="tsk-epgroup-ep" ng-repeat="newep in recent_adds">
-		{{newep.fparse.series}}<br/>
-		{{newep.fparse.episode}}
+	<div class="tsk-epgroup-newep" ng-repeat="newep in recent_adds">
+		<div class="tsk-epgroup-newep-img">
+			<img ng-src="file://{{tkconfig.data_dir}}/ss/full/{{newep.vscap.filename}}" />
+		</div>
+		<div class="tsk-epgroup-newep-txt">
+			<div class="tsk-epgroup-newep-series">{{newep._series.title}}</div>
+			<div class="tsk-epgroup-newep-title">{{newep._episode.title}}</div>
+		</div>
+		<div class="tsk-epgroup-newep-number">
+			<span class="tsk-epgroup-newep-number-season">{{newep._episode.season}}</span>-
+			<span class="tsk-epgroup-newep-number-episode">{{newep._episode.episode}}</span>
+		</div>
 	</div>
 </div>
 

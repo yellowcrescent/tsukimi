@@ -445,18 +445,88 @@ body {
 	clear: both;
 }
 
+.tsk-epheader {
+	overflow: hidden;
+	font-family: "PT Sans";
+	font-size: 36px;
+	font-weight: 800;
+	color: rgba(250, 250, 250, 0.9);
+	padding: 2px 15px;
+}
+
 .tsk-epgroup {
 	margin: 30px 25px;
 	overflow: hidden;
 
-	&-ep {
+	&-newep {
 		overflow: hidden;
 		float: left;
-		background: rgba(128,128,128,0.5);
 		color: rgba(250,250,250,1.0);
 		font-family: "Myriad Pro";
 		font-size: 14px;
+		margin: 2px;
+
+		&-img {
+			float: left;
+			padding: 5px;
+			margin: 0;
+			overflow: hidden;
+			width: 325px;
+			&>img {
+				width: 320px;
+			}
+		}
+
+		&-series {
+			overflow: hidden;
+			clear: left;
+			font-family: "Roboto";
+			font-size: 24px;
+			font-weight: 600;
+			line-height: 0.85;
+			text-overflow: ellipsis;
+			max-width: 280px;
+			max-height: 20px;
+			white-space: nowrap;
+		}
+
+		&-title {
+			font-family: "Raleway";
+			font-size: 14px;
+		}
+
+		&-txt {
+			float: left;
+			clear: left;
+			overflow: hidden;
+			border-bottom: 1px solid rgba(250,250,250,0.5);
+		}
+
+		&-number {
+			display: inline-block;
+			float: right;
+			height: 40px;
+			padding: 0px 8px;
+			background: rgba(220,220,220,0.1);
+			font-family: "Patua One";
+			font-size: 24px;
+			color: rgba(190, 190, 190, 0.8);
+			border-bottom: 3px solid rgba(250,250,250,0.8);
+
+			&-season {
+				font-size: 18px;
+			}
+
+			&-episode {
+				color: rgba(250,250,250,1.0);
+			}
+		}
+
 	}
+}
+
+#recent-adds {
+	max-height: 470px;
 }
 
 .ricon {
@@ -482,3 +552,27 @@ body {
 		color: #f39c12;
 	}
 }
+
+.help-block-sm {
+	font-size: 13px;
+}
+
+.btn-chkbox {
+	width: 48px;
+	color: #333;
+	background: none;
+	border: none;
+	box-shadow: none !important;
+
+	&:hover {
+		color: #555;
+	}
+
+	&:focus {
+		color: #555 !important;
+		outline: 3px dotted rgba(40, 40, 40, 0.15) !important;
+		background: none !important;
+	}
+}
+
+

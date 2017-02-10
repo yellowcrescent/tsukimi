@@ -236,8 +236,8 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 						// update fparse values according to selected episode
 						if($scope.sprop.epdata) {
 							nprop.fparse.series = $scope.sprop.serdata.title;
-							nprop.fparse.season = $scope.sprop.epdata.SeasonNumber;
-							nprop.fparse.episode = $scope.sprop.epdata.EpisodeNumber;
+							nprop.fparse.season = $scope.sprop.epdata.season;
+							nprop.fparse.episode = $scope.sprop.epdata.episode;
 						}
 
 						// update file data
@@ -491,6 +491,12 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 						break;
 					case '_close':
 						logthis.verbose("XBake exited -- retval = %d", sdata.exitcode);
+						if(sdata.exitcode > 0) {
+							$scope.scanStatus.title = "Scan failed";
+							$scope.scanStatus.content = "XBake exited with code " + sdata.exitcode;
+							$scope.scanStatus.iconClassList = ['fa','fa-exclamation-triangle'];
+							$scope.refresh();
+						}
 						break;
 					case 'complete':
 						logthis.info("XBake scan complete -- files: %d / series: %d", sdata.files, sdata.series);
@@ -539,6 +545,11 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		$scope.refresh();
 	};
 
+	$scope.selectAll = function() {
+		$('.fentry').addClass('selected');
+		logthis.debug("selectAll - %d entries selected", $('.fentry').length);
+	};
+
 	$scope.refresh = function() {
 		// make spinny thing spin
 		$('#btn-refresh').addClass("fa-spin");
@@ -573,6 +584,55 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		});
 
 		//_lib_scopeApply($scope);
+	};
+
+	$scope.runImportDiag = function() {
+		$scope.hasFocus = 'modal';
+		logthis.debug2("runImportDiag");
+		$scope.sprop = { group: null, vscap_auto: true, group_list: tskGroupList };
+
+		// build modal properties dialog
+		$scope.modal = $modal({ title: "Import Configuration", templateUrl: "/public/views/partials/modal_import.html", scope: $scope });
+
+		$scope.modal.confirm = function() {
+			var idata = { group: $scope.sprop.group, vscap_auto: $scope.sprop.vscap_auto };
+			$scope.modal.finish();
+			$scope.runImport(idata);
+		};
+
+		$scope.modal.finish = function() {
+			$scope.modal.hide();
+			$scope.refresh();
+		};
+
+		_lib_scopeApply($scope);
+	};
+
+	$scope.runImport = function(import_config) {
+		var importProgressCbx = function(msg) {
+			$scope.scanStatus.content = msg;
+			_lib_scopeApply($scope);
+		};
+
+		$scope.scanStatus = { title: "Import", content: "Import in progress...", iconClassList: ['fa','fa-spin','fa-moon-o'], show: true };
+		logthis.info("Starting import - %d files", $scope.selection.length);
+		logthis.debug("Selected entries:", $scope.selection);
+		tkcore.db.import_selection($scope.selection, import_config, importProgressCbx, function(err) {
+			if(err) {
+				$scope.scanStatus.title = "Import failed";
+				$scope.scanStatus.content = err;
+				$scope.scanStatus.iconClassList = ['fa','fa-exclamation-triangle'];
+				logthis.error("Import failed: %s", err);
+			} else {
+				$scope.scanStatus.title = "Import complete";
+				$scope.scanStatus.content = "Imported " + $scope.selection.length + " files OK";
+				$scope.scanStatus.iconClassList = ['fa','fa-check-circle-o'];
+				logthis.info("Import completed successfully");
+			}
+			$scope.selection = [];
+			$scope.refresh();
+		});
+		_lib_scopeApply($scope);
 	};
 
 	// perform initial update
@@ -662,7 +722,7 @@ function _lib_event_keydown(evt) {
 				$scope.flist_select(evt, $('.fentry')[0].id.split('-')[1]);
 			} else {
 				var iNext;
-				if(evt.keyIdentifier == "Down") {
+				if(evt.code == "ArrowDown") {
 					iNext = $scope.selected.tindex + 1;
 					if(iNext >= llen) iNext = llen - 1;
 				} else {
@@ -681,6 +741,10 @@ function _lib_event_keydown(evt) {
 			// ignore selected
 			$scope.ignoreSelected();
 			// prevent default - required for Mac to prevent going 'back'
+			evt.preventDefault();
+			return false;
+		} else if(evt.code == "KeyA" && evt.ctrlKey === true) {
+			$scope.selectAll();
 			evt.preventDefault();
 			return false;
 		} else if(evt.code == delkey && evt.shiftKey === true) {

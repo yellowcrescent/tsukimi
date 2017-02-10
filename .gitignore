@@ -1,5 +1,9 @@
 node_modules
 *.log
+*.ico
+*.icns
 settings.json
 coverage
 test
+build
+.cache

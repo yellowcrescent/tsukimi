@@ -17,10 +17,15 @@
 function watchHomeController($scope, $location, $routeParams, $http) {
 	console.log("browseHomeController start");
 
+	$scope.group_list = tskGroupList;
+	$scope.tkconfig = tkconfig;
+
 	// FIXME: get recently-added videos
-	tkcore.db.query_videos({}, function(err, rez) {
+	tkcore.db.query_videos_rr({}, function(err, rez) {
 		$scope.recent_adds = rez;
+		console.log("query_videos_rr returned:", rez);
 	});
 
+	window.$scope = $scope;
 }
 

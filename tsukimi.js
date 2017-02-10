@@ -128,3 +128,4 @@ exports.scanner			= scanner;
 exports.scrapers		= scrapers;
 exports.fsutils			= fsutils;
 exports.logthis			= logthis;
+exports.settings		= settings;
