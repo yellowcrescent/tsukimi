@@ -24,6 +24,7 @@ function watchHomeController($scope, $location, $routeParams, $http) {
 	tkcore.db.query_videos_rr({}, function(err, rez) {
 		$scope.recent_adds = rez;
 		console.log("query_videos_rr returned:", rez);
+		if(!$scope.$$phase) $scope.$apply();
 	});
 
 	window.$scope = $scope;

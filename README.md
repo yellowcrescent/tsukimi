@@ -50,6 +50,15 @@ If everything goes smoothly, you should now be able to run tsukimi after updatin
 nw
 ```
 
+### Building Release Distributions
+
+To build redist packages for the current version (Windows, OS X, and Linux):
+```
+gulp buildall
+```
+
+`./build/tsukimi - $VERSION` will contain directories with builds for each target.
+
 
 #### Manually building dependencies
 

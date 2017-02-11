@@ -21,7 +21,7 @@ var jshintSummary = require('jshint-stylish-summary');
 var NwBuilder = require('nw-builder');
 var C = gutil.colors;
 var spawn = require('child_process').spawnSync;
-var basedir = process.cwd();
+var basedir = process.cwd() + '/nwapp';
 
 // compass task:
 // compile scss files to css
@@ -29,8 +29,8 @@ gulp.task('compass', function() {
 	gulp.src('sass/*.scss')
 		.pipe(compass({
 			config_file: 'config.rb',
-			css: 'public/css',
-			image: 'public/img',
+			css: 'nwapp/public/css',
+			image: 'nwapp/public/img',
 			sass: 'sass'
 		}));
 });
@@ -65,8 +65,20 @@ gulp.task('buildmods', function() {
 	}
 });
 
+// npm install runner for nwapp
+gulp.task('nwmods', function() {
+	// output icns file, followed by n-number of power-of-two png icons
+	var sout = spawn('npm', [ "install" ], { cwd: basedir });
+	if(sout.error || sout.status) {
+		gutil.log(C.red("Failed to install node_modules for nwapp: "+sout.error));
+		gutil.log("Program output:");
+		console.dir(sout);
+	}
+	gutil.log("npm install run for nwapp completed");
+});
+
 // linting task
-var jsource = [ '*.js', 'public/*.js', 'public/controllers/*.js' ];
+var jsource = [ 'nwapp/*.js', 'nwapp/public/*.js', 'nwapp/public/controllers/*.js' ];
 var jreporter = 'jshint-stylish';
 
 gulp.task('lint', function() {
@@ -81,7 +93,7 @@ gulp.task('lint', function() {
 // build Mac ICNS
 gulp.task('icon_icns', function() {
 	// output icns file, followed by n-number of power-of-two png icons
-	var icnsArgs = [ "tsukimi.icns", "tsukimi_icon.png" ];
+	var icnsArgs = [ "build/tsukimi.icns", "icons/tsukimi_icon.png" ];
 	var sout = spawn('png2icns', icnsArgs);
 	if(sout.error || sout.status) {
 		gutil.log(C.red("Failed to build Mac icns file: "+sout.error));
@@ -94,7 +106,7 @@ gulp.task('icon_icns', function() {
 // build Windows ICO
 gulp.task('icon_ico', function() {
 	// output ico file, followed by n-number of power-of-two png icons
-	var icoArgs = [ "-c", "-o", "tsukimi.ico", "tsukimi_icon.png" ];
+	var icoArgs = [ "-c", "-o", "build/tsukimi.ico", "icons/tsukimi_icon.png" ];
 	var sout = spawn('icotool', icoArgs);
 	if(sout.error || sout.status) {
 		gutil.log(C.red("Failed to build Windows ico file: "+sout.error));
@@ -113,9 +125,9 @@ gulp.task('nwbuilder', function() {
 		cacheDir: './.cache',
 		buildType: 'versioned',
 		flavor: 'normal',
-		files: ['package.json', './node_modules', './*.js', './public/**'],
-		macIcns: 'tsukimi.icns',
-		winIco: 'tsukimi.ico',
+		files: ['./nwapp/**'],
+		macIcns: 'build/tsukimi.icns',
+		winIco: 'build/tsukimi.ico',
 		macPlist: {mac_bundle_id: 'com.ycnrg.tsukimi'},
 		platforms: ['win32', 'win64', 'osx64', 'linux64']
 	});
@@ -132,6 +144,6 @@ gulp.task('nwbuilder', function() {
 });
 
 // default task
-gulp.task('default', [ 'lint', 'bower', 'compass', 'buildmods' ]);
+gulp.task('default', [ 'lint', 'bower', 'compass', 'nwmods', 'buildmods' ]);
 gulp.task('build', [ 'icon_icns', 'icon_ico', 'nwbuilder' ]);
-gulp.task('buildall', [ 'lint', 'bower', 'compass', 'buildmods', 'icon_icns', 'icon_ico', 'nwbuilder' ]);
+gulp.task('buildall', [ 'default', 'build' ]);
