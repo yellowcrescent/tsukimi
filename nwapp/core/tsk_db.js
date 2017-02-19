@@ -24,19 +24,26 @@ var scanner = require('./scanner');
 var emitter = new events.EventEmitter();
 var monjer = false;
 
-function connect(conx) {
+function connect(conx, _cbx) {
 	logthis.verbose("Connecting to MongoDB: %s", conx);
-	MongoClient.connect(conx, function(err,db) {
-		if(!err) {
-			logthis.info("Connected to Mongo OK");
-			monjer = db;
-			emitter.emit('db_connect_ok');
-		} else {
-			logthis.error("Failed to connect to Mongo database",{ error: err });
-			monjer = false;
-			emitter.emit('db_connect_fail');
-		}
-	});
+	try {
+		MongoClient.connect(conx, function(err,db) {
+			if(!err) {
+				logthis.info("Connected to Mongo OK");
+				monjer = db;
+				emitter.emit('db_connect_ok');
+				_cbx(null);
+			} else {
+				logthis.error("Failed to connect to Mongo database:", err);
+				monjer = false;
+				emitter.emit('db_connect_fail');
+				_cbx(err);
+			}
+		});
+	} catch(err) {
+		logthis.error("Failed to connect to Mongo database:", err);
+		_cbx(err);
+	}
 }
 
 function close() {

@@ -5,7 +5,7 @@
  * public/controllers/watch.js
  * Controllers: Watch
  *
- * Copyright (c) 2016 Jacob Hipps/Neo-Retro Group, Inc.
+ * Copyright (c) 2016-2017 Jacob Hipps/Neo-Retro Group, Inc.
  * https://ycnrg.org/
  *
  * @author      Jacob Hipps - jacob@ycnrg.org
@@ -17,7 +17,7 @@
 function watchHomeController($scope, $location, $routeParams, $http) {
 	console.log("browseHomeController start");
 
-	$scope.group_list = tskGroupList;
+	$scope.group_list = tkconfig.groups;
 	$scope.tkconfig = tkconfig;
 
 	// FIXME: get recently-added videos

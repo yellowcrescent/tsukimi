@@ -589,7 +589,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	$scope.runImportDiag = function() {
 		$scope.hasFocus = 'modal';
 		logthis.debug2("runImportDiag");
-		$scope.sprop = { group: null, vscap_auto: true, group_list: tskGroupList };
+		$scope.sprop = { group: null, vscap_auto: true, group_list: tkconfig.groups };
 
 		// build modal properties dialog
 		$scope.modal = $modal({ title: "Import Configuration", templateUrl: "/public/views/partials/modal_import.html", scope: $scope });
@@ -615,23 +615,29 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		};
 
 		$scope.scanStatus = { title: "Import", content: "Import in progress...", iconClassList: ['fa','fa-spin','fa-moon-o'], show: true };
-		logthis.info("Starting import - %d files", $scope.selection.length);
-		logthis.debug("Selected entries:", $scope.selection);
-		tkcore.db.import_selection($scope.selection, import_config, importProgressCbx, function(err) {
-			if(err) {
-				$scope.scanStatus.title = "Import failed";
-				$scope.scanStatus.content = err;
-				$scope.scanStatus.iconClassList = ['fa','fa-exclamation-triangle'];
-				logthis.error("Import failed: %s", err);
-			} else {
-				$scope.scanStatus.title = "Import complete";
-				$scope.scanStatus.content = "Imported " + $scope.selection.length + " files OK";
-				$scope.scanStatus.iconClassList = ['fa','fa-check-circle-o'];
-				logthis.info("Import completed successfully");
-			}
-			$scope.selection = [];
-			$scope.refresh();
-		});
+		if($scope.selection.length > 0) {
+			logthis.info("Starting import - %d files", $scope.selection.length);
+			logthis.debug("Selected entries:", $scope.selection);
+			tkcore.db.import_selection($scope.selection, import_config, importProgressCbx, function(err) {
+				if(err) {
+					$scope.scanStatus.title = "Import failed";
+					$scope.scanStatus.content = err;
+					$scope.scanStatus.iconClassList = ['fa','fa-exclamation-triangle'];
+					logthis.error("Import failed: %s", err);
+				} else {
+					$scope.scanStatus.title = "Import complete";
+					$scope.scanStatus.content = "Imported " + $scope.selection.length + " files OK";
+					$scope.scanStatus.iconClassList = ['fa','fa-check-circle-o'];
+					logthis.info("Import completed successfully");
+				}
+				$scope.selection = [];
+				$scope.refresh();
+			});
+		} else {
+			$scope.scanStatus.title = "Import failed";
+			$scope.scanStatus.content = "No files marked for import";
+			$scope.scanStatus.iconClassList = ['fa','fa-exclamation-triangle'];
+		}
 		_lib_scopeApply($scope);
 	};
 

@@ -15,7 +15,6 @@
  *****************************************************************************/
 /* jshint -W030 */
 
-var settings = require("./settings");
 var C = require('chalk');
 var winston = require('winston');
 require('winston-mongodb').MongoDB;
@@ -38,11 +37,18 @@ var logger = new (winston.Logger)({
 				else if(options.level == 'error') { lcolored = C.red.underline('<'+options.level+'>'); msgcolor = 'red'; }
 				else if(options.level == 'info') lcolored = C.green.underline('<'+options.level+'>');
 				else lcolored = C.gray('<'+options.level+'>');
-				return C.white('['+(new Date(options.timestamp())).toISOString()+']') + " " + lcolored + " " +
+
+				ppid = C.gray(process.pid) + " ";
+				return C.white('['+(new Date(options.timestamp())).toISOString()+']') + " " + ppid + lcolored + " " +
 				       (undefined !== options.message ? C[msgcolor](options.message) : '') +
 				       (options.meta && Object.keys(options.meta).length ? '\n\t'+ C.cyan(JSON.stringify(options.meta)) : '' );
 			}
 		}),
+		new (winston.transports.File)({
+			name: 'file-logger',
+			filename: 'tsukimi.log'
+		}),
+		/*
 		new (winston.transports.MongoDB)({
 			name: 'mongo-logger',
 			level: 'info',
@@ -53,6 +59,7 @@ var logger = new (winston.Logger)({
 			cappedMax: 1000000,
 			silent: true
 		})
+		*/
 	],
 	level: 'info',
 	levels: {

@@ -18,10 +18,18 @@
  * Import functions from background thread (Node.js)
  **/
 
-var tkcore = require('./tsukimi');
-var tkversion = tkcore.browserInit(process.versions, nw.App.argv);
+var tkcore = require('./main');
 var logthis = tkcore.logthis;
-var tkconfig = tkcore.settings;
+var tkconfig = null;
+var tkversion = null;
+
+// initialize backend processes
+tkcore.browserInit(process.versions, nw.App.argv, function(err, tver, tset) {
+	// save version & settings
+	tkversion = tver;
+	tkconfig = tset;
+	onConfigLoad(err);
+});
 
 /**
  * AngularJS bootstrap and dependency injection
@@ -44,6 +52,10 @@ tsukimi.config(
 
 		$routeProvider
 			.when('/', {
+				templateUrl: '/public/views/splash.html',
+				controller: splashController
+			})
+			.when('/watch', {
 				templateUrl: '/public/views/watch_home.html',
 				controller: watchHomeController
 			})
@@ -67,7 +79,7 @@ tsukimi.config(
 /**
  * Route change hook
  **/
-var path2id = { "": null, "/": "watch", "/library": "library", "/settings": "settings", "/about": "about" };
+var path2id = { "": null, "/": "splash", "/watch": "watch", "/library": "library", "/settings": "settings", "/about": "about" };
 
 tsukimi.run(['$rootScope','$location','$routeParams', function($rootScope, $location, $routeParams) {
 	$rootScope.$on('$routeChangeSuccess', function(evt, cur, prev) {
@@ -108,10 +120,3 @@ $(document).on('show.bs.modal', '.modal', function(evt) {
 		$('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
 	}, 0);
 });
-
-
-/**
- * Globals
- **/
-
-var tskGroupList = tkconfig.groups;

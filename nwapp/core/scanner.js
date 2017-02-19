@@ -55,7 +55,7 @@ exports.xbake_scandir = function(indir, _cbx) {
 
 exports.xbake_vscap = function(fpath, fid, offset, _cbx) {
 	var vscap_data = null;
-	var xbake = child_process.spawn('xbake', [ '--tsukimi', '--noupdate', '--id', fid, '--vscap', offset, '--ssonly', fpath ] );
+	var xbake = child_process.spawn('xbake', [ '--tsukimi', '--noupdate', '--nothumbs', '--id', fid, '--vscap', offset, '--ssonly', fpath ] );
 
 	xbake.stderr.on('data', function(data) {
 		var odata;

@@ -491,6 +491,10 @@ body {
 		}
 
 		&-title {
+			overflow: hidden;
+			max-width: 250px;
+			max-height: 20px;
+			white-space: nowrap;
 			font-family: "Raleway";
 			font-size: 14px;
 		}
@@ -526,7 +530,7 @@ body {
 }
 
 #recent-adds {
-	max-height: 470px;
+	/*max-height: 470px;*/
 }
 
 .ricon {
@@ -575,4 +579,47 @@ body {
 	}
 }
 
+.splash {
+	&-bg {
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 9001;
+		background: rgba(40, 40, 40, 0.8);
+		overflow: hidden;
+	}
 
+	&-outer {
+		position: absolute;
+		left: 46%;
+		top: 30%;
+	}
+
+	&-inner {
+		overflow: hidden;
+		width: 200px;
+		color: rgba(240, 240, 240, 1.0);
+	}
+
+	&-indicator {
+		float: left;
+		clear: both;
+		font-size: 48px;
+	}
+
+	&-subtext {
+		clear: both;
+		font-family: "Source Sans Pro";
+		font-weight: 200;
+		font-size: 52px;
+		padding-left: 15px;
+	}
+}
+
+.shidden {
+	opacity: 0;
+	height: 0;
+	transition: opacity 0.8s linear, height 0s;
+}

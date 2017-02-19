@@ -6,4 +6,5 @@ settings.json
 coverage
 test
 build
+build-dbg
 .cache

@@ -15,7 +15,7 @@
  *****************************************************************************/
 
 var xattr = require('fs-xattr');
-var pkgdata = require("./package");
+var pkgdata = require("../package");
 var logthis = require('./logthis');
 
 function xattr_set_ignore(fpath, _cbx) {

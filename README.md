@@ -1,12 +1,33 @@
 
+![](https://ycnrg.org/img/tsukimi_logo_v2_96.png)
 # tsukimi media browser
 
-__tsukimi__ is a networked media browser built with [NW.js](http://nwjs.io/), [Node.js](https://nodejs.org/), [Compass](http://compass-style.org/), and HTML5/CSS3. [mpv](https://mpv.io/) is used for high-quality video playback.
+__tsukimi__ is a cross-platform networked media browser built with [NW.js](http://nwjs.io/), [Compass](http://compass-style.org/), and HTML5/CSS3. [mpv](https://mpv.io/) is used for high-quality video playback.
 
-```
-Copyright © 2014-2016 Jacob Hipps / Neo-Retro Group, Inc.
-Licensed under MPLv2 <https://www.mozilla.org/en-US/MPL/2.0/>
-```
+> Copyright © 2014-2017 Jacob Hipps / Neo-Retro Group, Inc.
+> Licensed under the [Mozilla Public License 2.0](https://www.mozilla.org/en-US/MPL/2.0/)
+
+
+## Status
+
+__This project is still a work-in-progress!__ There are a lot of issues that need to be resolved before it can be considered stable or ready for general use.
+
+Open issues & tasks can be viewed on the [Tsukimi JIRA page](https://jira.ycnrg.org/projects/TSK).
+
+## Screenshots
+
+- _Recently Added_ videos in the video browser
+![](https://ss.ycnrg.org/jotunn_20170218_204332.png)
+
+- Library management section, showing a recently-scanned series
+![](https://ss.ycnrg.org/jotunn_20170218_204607.png)
+
+- [TheTVDb](http://thetvdb.com/) search results for a TV series. Allows mass-updating all videos with the matching series tag, and automatically determining a matching episode ID when choosing a different series.
+![](https://ss.ycnrg.org/jotunn_20170218_205715.png)
+
+- _Import Configuration_ dialog. Allows associating videos with a particular grouping in the video browser (eg. _TV_, _Documentary_, _Anime_, _Cartoons_, _Music Videos_, etc.). Groups can be user-defined. If enabled, a screenshot will be automatically taken from the source media.
+![](https://ss.ycnrg.org/jotunn_20170218_210051.png)
+
 
 ## External Dependencies
 

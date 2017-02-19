@@ -18,6 +18,8 @@ var bower = require('gulp-bower');
 var jshint = require('gulp-jshint');
 var jshintBamboo = require('gulp-jshint-bamboo');
 var jshintSummary = require('jshint-stylish-summary');
+var del = require('del');
+var mkdirp = require('mkdirp');
 var NwBuilder = require('nw-builder');
 var C = gutil.colors;
 var spawn = require('child_process').spawnSync;
@@ -93,27 +95,29 @@ gulp.task('lint', function() {
 // build Mac ICNS
 gulp.task('icon_icns', function() {
 	// output icns file, followed by n-number of power-of-two png icons
+	mkdirp.sync('build', {mode: 0755});
 	var icnsArgs = [ "build/tsukimi.icns", "icons/tsukimi_icon.png" ];
 	var sout = spawn('png2icns', icnsArgs);
 	if(sout.error || sout.status) {
-		gutil.log(C.red("Failed to build Mac icns file: "+sout.error));
-		gutil.log("Program output:");
+		gutil.log('icon_icns', C.red("Failed to build Mac icns file: "+sout.error));
+		gutil.log('icon_icns', "Program output:");
 		console.dir(sout);
 	}
-	gutil.log("Mac icns file compiled OK");
+	gutil.log('icon_icns', "Mac icns file compiled OK");
 });
 
 // build Windows ICO
 gulp.task('icon_ico', function() {
 	// output ico file, followed by n-number of power-of-two png icons
+	mkdirp.sync('build', {mode: 0755});
 	var icoArgs = [ "-c", "-o", "build/tsukimi.ico", "icons/tsukimi_icon.png" ];
 	var sout = spawn('icotool', icoArgs);
 	if(sout.error || sout.status) {
-		gutil.log(C.red("Failed to build Windows ico file: "+sout.error));
-		gutil.log("Program output:");
+		gutil.log('icon_ico', C.red("Failed to build Windows ico file: "+sout.error));
+		gutil.log('icon_ico', "Program output:");
 		console.dir(sout);
 	}
-	gutil.log("Windows ico file compiled OK");
+	gutil.log('icon_ico', "Windows ico file compiled OK");
 });
 
 // nwbuilder task
@@ -123,27 +127,87 @@ gulp.task('nwbuilder', function() {
 		appVersion: pkgdata.version,
 		version: pkgdata.nw_version,
 		cacheDir: './.cache',
+		buildDir: './build',
 		buildType: 'versioned',
 		flavor: 'normal',
 		files: ['./nwapp/**'],
 		macIcns: 'build/tsukimi.icns',
 		winIco: 'build/tsukimi.ico',
+		zip: false,
 		macPlist: {mac_bundle_id: 'com.ycnrg.tsukimi'},
 		platforms: ['win32', 'win64', 'osx64', 'linux64']
 	});
 
 	// Log stuff you want
 	nw.on('log', function (msg) {
-		gutil.log('nw-builder', msg);
+		gutil.log('nwbuilder', msg);
 	});
 
 	// Build returns a promise, return it so the task isn't called in parallel
 	return nw.build().catch(function (err) {
-		gutil.log('nw-builder', err);
+		gutil.log('nwbuilder', err);
 	});
+});
+
+// nwbuilder task
+gulp.task('nwbuilder-dbg', function() {
+	var nw = new NwBuilder({
+		appName: "tsukimi",
+		appVersion: pkgdata.version,
+		version: pkgdata.nw_version,
+		cacheDir: './.cache',
+		buildDir: './build-dbg',
+		buildType: 'versioned',
+		flavor: 'sdk',
+		files: ['./nwapp/**'],
+		macIcns: 'build/tsukimi.icns',
+		winIco: 'build/tsukimi.ico',
+		zip: false,
+		macPlist: {mac_bundle_id: 'com.ycnrg.tsukimi'},
+		platforms: ['win32', 'win64', 'osx64', 'linux64']
+	});
+
+	// Log stuff you want
+	nw.on('log', function (msg) {
+		gutil.log('nwbuilder-dbg', msg);
+	});
+
+	// Build returns a promise, return it so the task isn't called in parallel
+	return nw.build().catch(function (err) {
+		gutil.log('nwbuilder-dbg', err);
+	});
+});
+
+// cleanup task
+gulp.task('clean', function() {
+	var cleanlist = [
+						'build',
+						'build-dbg',
+						'*.log',
+						'nwapp/*.log'
+					];
+	gutil.log('clean', "removing build artifacts:\n\t" + cleanlist.join('\n\t'));
+	return del(cleanlist);
+});
+
+// strip all non-dist files
+gulp.task('distclean', function() {
+	var cleanlist = [
+						'build',
+						'build-dbg',
+						'.cache',
+						'node_modules',
+						'nwapp/node_modules',
+						'nwapp/public/css/*.css',
+						'nwapp/public/vendor'
+					];
+	gutil.log('clean', "removing build artifacts, modules, cached NW.js binaries, and Compass products:\n\t" + cleanlist.join('\n\t'));
+	return del(cleanlist);
 });
 
 // default task
 gulp.task('default', [ 'lint', 'bower', 'compass', 'nwmods', 'buildmods' ]);
 gulp.task('build', [ 'icon_icns', 'icon_ico', 'nwbuilder' ]);
+gulp.task('build-dbg', [ 'icon_icns', 'icon_ico', 'nwbuilder-dbg' ]);
 gulp.task('buildall', [ 'default', 'build' ]);
+gulp.task('buildall-dbg', [ 'default', 'build-dbg' ]);

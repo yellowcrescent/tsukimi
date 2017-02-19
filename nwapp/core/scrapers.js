@@ -15,7 +15,7 @@
  *****************************************************************************/
 
 var request = require('request');
-var pkgdata = require("./package");
+var pkgdata = require("../package");
 var xml2js = require('xml2js');
 var logthis = require('./logthis');
 
