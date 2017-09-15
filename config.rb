@@ -14,11 +14,11 @@ require 'compass/import-once/activate'
 # Require any additional compass plugins here.
 
 # Set this to the root of your project when deployed:
-http_path = "nwapp/public"
-css_dir = "nwapp/public/css"
-sass_dir = "sass"
-images_dir = "nwapp/public/img"
-javascripts_dir = "nwapp/public/js"
+http_path = "app"
+css_dir = "app/css"
+sass_dir = "src/style"
+images_dir = "app/img"
+javascripts_dir = "app"
 
 # You can select your preferred output style here (can be overridden via the command line):
 # output_style = :expanded or :nested or :compact or :compressed
@@ -33,4 +33,3 @@ preferred_syntax = :scss
 sourcemap = false
 disable_warnings = true
 sass_options = { :cache => false }
-

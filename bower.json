@@ -12,9 +12,7 @@
   "ignore": [
     "**/.*",
     "node_modules",
-    "public/vendor",
-    "test",
-    "tests"
+    "app/vendor"
   ],
   "dependencies": {
     "angular": "^1.5.5",
