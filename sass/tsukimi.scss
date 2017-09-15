@@ -15,6 +15,7 @@
  *****************************************************************************/
 
 @import "_ycutil.scss";
+@import "_typography.scss";
 @import "_transitions.scss";
 
 /*** Dimensions ***/
@@ -474,6 +475,7 @@ body {
 			width: 325px;
 			&>img {
 				width: 320px;
+				cursor: pointer;
 			}
 		}
 

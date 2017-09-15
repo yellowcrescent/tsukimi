@@ -161,9 +161,7 @@ function tvdb_process(indata, _cbx) {
 	var txc = {
 				genre: iser.Genre.split('|').filter(function(x) { return x ? true : false; }),
 				ctitle: iser.SeriesName,
-				lastupdated: (iser.lastupdated || parseInt(Date.now() * 1000.0)),
-				status: (iser.Status || 'unknown'),
-				fetched: parseInt(Date.now() / 1000),
+				lastupdated: (parseInt(iser.lastupdated) || parseInt(Date.now() / 1000.0)),
 				xrefs: {
 						tvdb: iser.id,
 						imdb: iser.IMDB_ID
@@ -176,7 +174,9 @@ function tvdb_process(indata, _cbx) {
 					},
 				synopsis: {
 							tvdb: iser.Overview
-						  }
+						  },
+				status: (iser.Status || 'unknown'),
+				fetched: parseInt(Date.now() / 1000)
 			  };
 
 	// get episodes

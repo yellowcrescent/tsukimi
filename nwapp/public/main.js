@@ -42,14 +42,19 @@ function thispage() {
 }
 
 /**
- * Routing configuration
+ * Angular configuration
  **/
 
 tsukimi.config(
-	function($routeProvider, $locationProvider, $sceProvider) {
+	function($routeProvider, $locationProvider, $sceProvider, $compileProvider) {
 		// disable SCE
 		$sceProvider.enabled(false);
 
+		// whitelist chrome-extension scheme to work-around angular's overprotective CSRF bullshit
+		$compileProvider.imgSrcSanitizationWhitelist(/^\s*((https?|ftp|file|blob|chrome-extension):|data:image\/)/);
+		$compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|tel|file|chrome-extension):/);
+
+		// configure routes
 		$routeProvider
 			.when('/', {
 				templateUrl: '/public/views/splash.html',

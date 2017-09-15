@@ -292,16 +292,11 @@ function add_series_full(sname, indata, _cbx) {
 	// process episode data
 	var eplist = [];
 	for(ti in indata.episodes) {
-		var thisep = indata.episodes[ti];
-		var tep_id = mkid_episode(tser_id, thisep);
-		thisep._id = tep_id;
-		thisep.tvdb_id = thisep.id;
-		thisep.series_id = tser_id;
-		delete(thisep.id);
+		var thisep = episode_schema_update(indata.episodes[ti], tser_id);
 		eplist.push(thisep);
 	}
 
-	logthis.debug("eplist ready for insert",{ eplist: eplist });
+	logthis.debug("eplist ready for insert", { eplist: eplist });
 
 	// insert series data into Mongo
 	monjer.collection('series').insert(thisx, function(err,rec) {
@@ -322,6 +317,50 @@ function add_series_full(sname, indata, _cbx) {
 		}
 	});
 
+}
+
+function episode_schema_update(epdata, serid, epid) {
+	var newep = {
+					_id: null,
+					series_id: serid,
+					season: parseInt(epdata.SeasonNumber) || null,
+					episode: parseInt(epdata.EpisodeNumber) || null,
+					episode_absolute: parseInt(epdata.absolute_number) || null,
+					title: epdata.EpisodeName,
+					alt_titles: [],
+					first_aired: parseInt(Date.parse(epdata.FirstAired) / 1000) || null,
+					lang: epdata.Language,
+					lastupdated: epdata.lastupdated || parseInt(Date.now()),
+					people: {
+								director: tvdb_split(epdata.Director),
+								writers: tvdb_split(epdata.Writer),
+								guests: tvdb_split(epdata.GuestStars),
+								actors: []
+							},
+					xref: {
+							tvdb: epdata.id,
+							tvdb_season: epdata.seasonid || null,
+							tvdb_series: epdata.seriesid || null,
+							imdb: epdata.IMDB_ID || null,
+							production_code: epdata.ProductionCode || null
+						  },
+					synopsis: {
+								tvdb: epdata.Overview
+							  },
+					default_synopsis: 'tvdb',
+					scrape_time: parseInt(Date.now() / 1000)
+				};
+	newep._id = mkid_episode(serid, newep);
+	return newep
+}
+
+function tvdb_split(instr) {
+	try {
+		return instr.split('|').filter(function(x) { return x.length; });
+	} catch(e) {
+		logthis.warning("Failed to split '%s'", instr, e);
+		return [];
+	}
 }
 
 function mkid_series(sid, xdata) {
@@ -369,22 +408,27 @@ function update_file_series(match, serid, _cbx) {
 			// remove existing files; may change this later, but this makes things
 			// easier so that we don't need to create a seperate function to do this
 			// with a chain of callbacks to update every single entry
-			monjer.collection('files').remove(match, function(err,rdoc) {
-				if(!err) logthis.verbose("removed existing files without error");
-				else logthis.error("Error removing existing files", { error: err, result: rdoc});
+			if(newfiles.length > 0) {
+				monjer.collection('files').remove(match, function(err,rdoc) {
+					if(!err) logthis.verbose("removed existing files without error");
+					else logthis.error("Error removing existing files", { error: err, result: rdoc});
 
-				// update files
-				monjer.collection('files').insert(newfiles, function(err,rdoc) {
-					if(!err) logthis.verbose("inserted updated file entries OK");
-					else logthis.error("Error when adding new file entries", { error: err, result: rdoc});
+					// update files
+					monjer.collection('files').insert(newfiles, function(err,rdoc) {
+						if(!err) logthis.verbose("inserted updated file entries OK");
+						else logthis.error("Error when adding new file entries", { error: err, result: rdoc});
 
-					// update series entry with correct count
-					monjer.collection('series').update({ '_id': serid }, { '$set': { count: fcount } }, function(err,rdoc) {
-						logthis.verbose("updated series file count OK");
-						_cbx(null);
+						// update series entry with correct count
+						monjer.collection('series').update({ '_id': serid }, { '$set': { count: fcount } }, function(err,rdoc) {
+							logthis.verbose("updated series file count OK");
+							_cbx(null);
+						});
 					});
 				});
-			});
+			} else {
+				logthis.error("No files updated");
+				_cbx('no_matching_files');
+			}
 		});
 	});
 }

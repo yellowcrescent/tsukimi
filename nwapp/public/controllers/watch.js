@@ -14,13 +14,19 @@
  *
  *****************************************************************************/
 
+var scope_vids = [];
+
 function watchHomeController($scope, $location, $routeParams, $http) {
 	console.log("browseHomeController start");
 
 	$scope.group_list = tkconfig.groups;
 	$scope.tkconfig = tkconfig;
 
-	// FIXME: get recently-added videos
+	// set default filter values
+	$scope.watchOrder = 'vstat.ctime';
+	$scope.watchOrderRev = true;
+	$scope.watchLimit = 20;
+
 	tkcore.db.query_videos_rr({}, function(err, rez) {
 		$scope.recent_adds = rez;
 		console.log("query_videos_rr returned:", rez);
@@ -28,5 +34,16 @@ function watchHomeController($scope, $location, $routeParams, $http) {
 	});
 
 	window.$scope = $scope;
+	$scope.playVideoByPath = playVideoByPath; // hacky shit
 }
 
+function playVideoByPath(vpath) {
+	tkcore.player.mpv_play(vpath, {}, tkcore.settings, function(vstatus) {
+		console.log(vstatus);
+		if(vstatus.msgtype == '_start') {
+			logthis.info("mpv: Now playing: %s", vstatus.file);
+		} else if(vstatus.msgtype == '_close') {
+			logthis.info("mpv: Exited [%s] (%s)", vstatus.file, vstatus.exitcode);
+		}
+	});
+}
