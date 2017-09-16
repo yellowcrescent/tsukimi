@@ -38,7 +38,7 @@ function watchHomeController($scope, $location, $routeParams, $http) {
 }
 
 function playVideoByPath(vpath) {
-	tkcore.player.mpv_play(vpath, {}, tkcore.settings, function(vstatus) {
+	tkcore.player.mpv_play(vpath, {}, function(vstatus) {
 		console.log(vstatus);
 		if(vstatus.msgtype == '_start') {
 			logthis.info("mpv: Now playing: %s", vstatus.file);

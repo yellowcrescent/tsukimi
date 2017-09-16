@@ -22,6 +22,7 @@ const mkdirp = require('mkdirp');
 const NwBuilder = require('nw-builder');
 const C = gutil.colors;
 const spawn = require('child_process').spawnSync;
+const electron = require('electron');
 const basedir = process.cwd();
 
 // compass task:
@@ -30,9 +31,9 @@ gulp.task('compass', function() {
     gulp.src('sass/*.scss')
         .pipe(compass({
             config_file: 'config.rb',
-            css: 'nwapp/public/css',
-            image: 'nwapp/public/img',
-            sass: 'sass'
+            css: 'app/public/css',
+            image: 'app/public/img',
+            sass: 'src/style'
         }));
 });
 
@@ -79,7 +80,7 @@ gulp.task('mods', function() {
 });
 
 // linting task
-var jsource = [ 'app/*.js', 'app/controllers/*.js' ];
+var jsource = [ 'app/*.js', 'app/public/*.js', 'app/controllers/*.js' ];
 var jreporter = 'jshint-stylish';
 
 gulp.task('lint', function() {
@@ -140,9 +141,18 @@ gulp.task('distclean', ['clean'], function() {
     return del(cleanlist);
 });
 
+// run application in dev environment
+gulp.task('runapp', function() {
+    gutil.log(C.white.underline("Spawning Electron application..."));
+    var eproc = spawn(electron, [ '.', '--loglevel=debug' ], { cwd: basedir, stdio: 'inherit', stdout: 'inherit', stderr: 'inherit' });
+    gutil.log("Execution terminated; return value (%d)", eproc.status);
+});
+
 // default task
 gulp.task('default', [ 'lint', 'bower', 'compass', 'mods', 'native_mods' ]);
 gulp.task('build', [ 'icon_icns', 'icon_ico' ]);
 gulp.task('build-dbg', [ 'icon_icns', 'icon_ico' ]);
 //gulp.task('buildall', [ 'default', 'build' ]);
 //gulp.task('buildall-dbg', [ 'default', 'build-dbg' ]);
+gulp.task('run', ['lint', 'compass', 'runapp']);
+

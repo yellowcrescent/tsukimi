@@ -11,7 +11,7 @@
 <div id="recent-adds" class="tsk-epgroup">
 	<div class="tsk-epgroup-newep" ng-repeat="newep in recent_adds | orderBy:watchOrder:watchOrderRev | limitTo:watchLimit">
 		<div class="tsk-epgroup-newep-img">
-			<img ng-src="file://{{tkconfig.data_dir}}/ss/full/{{newep.vscap.filename}}" ng-click="playVideoByPath('{{newep._files[newep.sources[0].id].location[newep._files[newep.sources[0].id].default_location].fpath.real}}')" />
+			<img ng-src="file://{{tkconfig.data_dir}}/ss/full/{{newep.vscap.filename}}" ng-click="playVideoByPath(newep._files[newep.sources[0].id].location[newep._files[newep.sources[0].id].default_location].fpath.real)" />
 		</div>
 		<div class="tsk-epgroup-newep-txt">
 			<div class="tsk-epgroup-newep-series">{{newep._series.title}}</div>

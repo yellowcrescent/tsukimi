@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html ng-app="tsukimi">
+<head>
+    <title>tsukimi</title>
+    <link rel="stylesheet" href="vendor/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="vendor/split-pane/split-pane.css" />
+    <link rel="stylesheet" href="theme/flatly.css" />
+    <link rel="stylesheet" href="vendor/angular-motion/dist/angular-motion.min.css" />
+    <link rel="stylesheet" href="vendor/angular-busy/dist/angular-busy.min.css" />
+    <link rel="stylesheet" href="vendor/jstree/dist/themes/default/style.css" />
+    <link rel="stylesheet" href="vendor/font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="css/tsukimi.css" />
+</head>
+<body>
+
+<nav class="tsk-navbar navbar navbar-default navbar-fixed-top">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <!-- tsukimi logo -->
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li id="nav-watch"><a href="index.html#!/watch">Watch</a></li>
+        <li id="nav-library"><a href="index.html#!/library">Library</a></li>
+        <li id="nav-settings"><a class="tsk-navbar-icon" href="index.html#!/settings"><span class="fa fa-gear fa-2x"></span></a></li>
+        <li id="nav-about"><a class="tsk-navbar-icon" href="index.html#!/about"><span class="fa fa-question-circle-o fa-2x"></span></a></li>
+      </ul>
+      <form class="tsk-navbar-form navbar-left" role="search">
+        <div class="form-group">
+          <input type="text" class="tsk-navbar-form-text" placeholder="search" id="searchbox" onfocus="$('#searchbox').addClass('focused')" onblur="$('#searchbox').removeClass('focused')" />
+          <span class="tsk-navbar-form-addon">
+            <span class="fa fa-search"></span>
+          </span>
+        </div>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<div class="tsk-navbar-clearfix"></div>
+
+<div class="tsk-view at-view-fade-in at-view-fade-out" ng-view>
+</div><!--//tsk-view -->
+
+<div id="splash" class="splash-bg">
+  <div class="splash-outer">
+    <div class="splash-inner">
+      <div class="splash-indicator">
+        <i id="splash-icon" class="fa fa-4x fa-circle-o-notch fa-spin"></i>
+      </div>
+      <div id="splash-text" class="splash-subtext">
+        Loading
+      </div>
+    </div>
+  </div>
+</div>
+
+    <!-- Workaround Electron module fuckery
+        <https://stackoverflow.com/questions/32621988/electron-jquery-is-not-defined> -->
+        <script>
+          if (typeof module === 'object') {window.module = module; module = undefined;}
+        </script>
+    <!--// -->
+
+    <!-- scripts -->
+        <script src="vendor/jquery/dist/jquery.js"></script>
+        <script src="vendor/jstree/dist/jstree.js"></script>
+        <script src="vendor/split-pane/split-pane.js"></script>
+        <script src="vendor/angular/angular.js"></script>
+        <script src="vendor/angular-route/angular-route.js"></script>
+        <script src="vendor/angular-animate/angular-animate.js"></script>
+        <script src="vendor/angular-strap/dist/angular-strap.js"></script>
+        <script src="vendor/angular-strap/dist/angular-strap.tpl.js"></script>
+    <!--//scripts -->
+
+    <!--controllers-->
+        <script src="main.js"></script>
+        <script src="controllers/splash.js"></script>
+        <script src="controllers/watch.js"></script>
+        <script src="controllers/library.js"></script>
+        <script src="controllers/settings.js"></script>
+        <script src="controllers/about.js"></script>
+    <!--//controllers-->
+
+    <!-- Restore Electron module object -->
+        <script>
+          if (window.module) module = window.module;
+        </script>
+    <!--// -->
+
+    <!--routes/splash-->
+    <script type="text/ng-template" id="views/splash.html">
+    </script>
+    <!--//routes/splash-->
+
+</body>
+</html>

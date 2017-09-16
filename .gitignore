@@ -11,6 +11,6 @@ node_modules
 
 app/*.ico
 app/*.icns
-app/vendor
-app/fonts/*.*
-app/css/*.*
+app/public/vendor
+app/public/fonts/*.*
+app/public/css/*.*

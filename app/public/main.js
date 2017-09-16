@@ -18,18 +18,22 @@
  * Import functions from background thread (Node.js)
  **/
 
-var tkcore = require('./main');
-var logthis = tkcore.logthis;
-var tkconfig = null;
-var tkversion = null;
+const electron = require('electron');
+const {remote, ipcRenderer} = electron;
 
-// initialize backend processes
-tkcore.browserInit(process.versions, nw.App.argv, function(err, tver, tset) {
-	// save version & settings
-	tkversion = tver;
-	tkconfig = tset;
-	onConfigLoad(err);
+const tkcore = remote.require('./index');
+const logthis = remote.getGlobal('logger');
+
+var tkconfig = remote.getGlobal('settings');
+var tkversion = process.versions;
+
+// Once scripts are loaded, move out of the splash cycle
+$(function() {
+	// TODO: maybe check `status` value and do something here
+	console.log("tkconfig:", tkconfig);
+	onConfigLoad(null);
 });
+
 
 /**
  * AngularJS bootstrap and dependency injection
@@ -57,23 +61,23 @@ tsukimi.config(
 		// configure routes
 		$routeProvider
 			.when('/', {
-				templateUrl: '/public/views/splash.html',
+				templateUrl: 'views/splash.html',
 				controller: splashController
 			})
 			.when('/watch', {
-				templateUrl: '/public/views/watch_home.html',
+				templateUrl: 'views/watch_home.html',
 				controller: watchHomeController
 			})
 			.when('/library', {
-				templateUrl: '/public/views/library.html',
+				templateUrl: 'views/library.html',
 				controller: libraryController
 			})
 			.when('/settings', {
-				templateUrl: '/public/views/settings.html',
+				templateUrl: 'views/settings.html',
 				controller: settingsController
 			})
 			.when('/about', {
-				templateUrl: '/public/views/about.html',
+				templateUrl: 'views/about.html',
 				controller: aboutController
 			})
 			.otherwise({

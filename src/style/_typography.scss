@@ -17,14 +17,14 @@
 // Source Sans Pro (L/200, R/400)
 @font-face {
     font-family: 'Source Sans Pro';
-    src: url('/public/fonts/SourceSansPro-Light.ttf') format("truetype");
+    src: url('file://~/fonts/SourceSansPro-Light.ttf') format("truetype");
     font-weight: 200;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Source Sans Pro';
-    src: url('/public/fonts/SourceSansPro-Regular.ttf') format("truetype");
+    src: url('file://~/fonts/SourceSansPro-Regular.ttf') format("truetype");
     font-weight: 400;
     font-style: normal;
 }
@@ -32,7 +32,7 @@
 // Ryo Gothic Plus (H/900)
 @font-face {
     font-family: 'Ryo Gothic Plus';
-    src: url('/public/fonts/RyoGothicPlusN-Heavy.otf') format("opentype");
+    src: url('file://~/fonts/RyoGothicPlusN-Heavy.otf') format("opentype");
     font-weight: 900;
     font-style: normal;
 }
@@ -40,14 +40,14 @@
 // Kozuka Gothic Pro (R/400, B/600)
 @font-face {
     font-family: 'Kozuka Gothic Pro R';
-    src: url('/public/fonts/KozGoPr6N-Regular.otf') format("opentype");
+    src: url('file://~/fonts/KozGoPr6N-Regular.otf') format("opentype");
     font-weight: 400;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Kozuka Gothic Pro B';
-    src: url('/public/fonts/KozGoPr6N-Bold.otf') format("opentype");
+    src: url('file://~/fonts/KozGoPr6N-Bold.otf') format("opentype");
     font-weight: 600;
     font-style: normal;
 }
@@ -55,7 +55,7 @@
 // Myriad Pro
 @font-face {
     font-family: 'Myriad Pro';
-    src: url('/public/fonts/MyriadPro-Regular.otf') format("opentype");
+    src: url('file://~/fonts/MyriadPro-Regular.otf') format("opentype");
     font-weight: 400;
     font-style: normal;
 }
@@ -63,7 +63,7 @@
 // PT Sans
 @font-face {
     font-family: 'PT Sans';
-    src: url('/public/fonts/PT_Sans-Web-Regular.ttf') format("truetype");
+    src: url('file://~/fonts/PT_Sans-Web-Regular.ttf') format("truetype");
     font-weight: 400;
     font-style: normal;
 }
@@ -71,14 +71,14 @@
 // Roboto (R/400, B/600)
 @font-face {
     font-family: 'Roboto';
-    src: url('/public/fonts/Roboto-Regular.ttf') format("truetype");
+    src: url('file://~/fonts/Roboto-Regular.ttf') format("truetype");
     font-weight: 400;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Roboto';
-    src: url('/public/fonts/Roboto-Bold.ttf') format("truetype");
+    src: url('file://~/fonts/Roboto-Bold.ttf') format("truetype");
     font-weight: 600;
     font-style: normal;
 }
@@ -86,7 +86,7 @@
 // Raleway
 @font-face {
     font-family: 'Raleway';
-    src: url('/public/fonts/Raleway-Regular.ttf') format("truetype");
+    src: url('file://~/fonts/Raleway-Regular.ttf') format("truetype");
     font-weight: 400;
     font-style: normal;
 }
@@ -94,7 +94,7 @@
 // Patua One
 @font-face {
     font-family: 'Patua One';
-    src: url('/public/fonts/PatuaOne-Regular.ttf') format("truetype");
+    src: url('file://~/fonts/PatuaOne-Regular.ttf') format("truetype");
     font-weight: 400;
     font-style: normal;
 }
@@ -102,14 +102,14 @@
 // Fira Sans (R/400, B/600)
 @font-face {
     font-family: 'Fira Sans';
-    src: url('/public/fonts/FiraSans-Regular.otf') format("opentype");
+    src: url('file://~/fonts/FiraSans-Regular.otf') format("opentype");
     font-weight: 400;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Fira Sans';
-    src: url('/public/fonts/FiraSans-Bold.otf') format("opentype");
+    src: url('file://~/fonts/FiraSans-Bold.otf') format("opentype");
     font-weight: 600;
     font-style: normal;
 }
@@ -117,7 +117,7 @@
 // Fira Sans Compressed
 @font-face {
     font-family: 'Fira Sans Compressed';
-    src: url('/public/fonts/FiraSansCompressed-Regular.otf') format("opentype");
+    src: url('file://~/fonts/FiraSansCompressed-Regular.otf') format("opentype");
     font-weight: 400;
     font-style: normal;
 }
@@ -125,14 +125,14 @@
 // M+ 1p
 @font-face {
     font-family: 'mplus1p';
-    src: url('/public/fonts/Mplus1p-Regular.otf') format("truetype");
+    src: url('file://~/fonts/Mplus1p-Regular.otf') format("truetype");
     font-weight: 400;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'mplus1p';
-    src: url('/public/fonts/Mplus1p-Bold.otf') format("truetype");
+    src: url('file://~/fonts/Mplus1p-Bold.otf') format("truetype");
     font-weight: 600;
     font-style: normal;
 }
