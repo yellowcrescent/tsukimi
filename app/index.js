@@ -24,11 +24,14 @@ const mkdirp = require('mkdirp');
 const pkgdata = require('../package');
 const db = require('./core/tsk_db');
 const player = require('./core/player');
+const scrapers = require('./core/scrapers');
+const scanner = require('./core/scanner');
 global.logger = require('./core/logthis');
 
-const {app, ipcMain} = electron;
+const {app, ipcMain, dialog} = electron;
 
 let windowMain;
+global.basepath = app.getAppPath();
 
 // default settings
 // TODO: we need to move this into its own file or something
@@ -87,7 +90,7 @@ global.xconf = {
 })();
 
 app.on('ready', function() {
-    windowMain = new electron.BrowserWindow({width: 1024, height: 768});
+    windowMain = new electron.BrowserWindow({width: 1920, height: 1080});
     windowMain.loadURL('file://' + __dirname + '/public/index.html');
     logger.info("Created main window");
 
@@ -274,6 +277,15 @@ function showBanner(gitdata) {
     process.stdout.write(C.cyan(" ***   ") + C.yellow("https://ycnrg.org/") + "\n\n");
 }
 
+function createPopupMenu(menudata, x, y) {
+    var menu = electron.Menu.buildFromTemplate(menudata);
+    menu.popup(windowMain, {x: x, y: y});
+}
+
+function openDialog(opts, _cbx) {
+    return dialog.showOpenDialog(windowMain, opts, _cbx);
+}
+
 global.getWindowHandle = function() {
     var hwnd = windowMain.getNativeWindowHandle();
     return Buffer.from(hwnd).readUInt32LE(0);
@@ -281,5 +293,9 @@ global.getWindowHandle = function() {
 
 // Exports ////
 exports.getWindowHandle = getWindowHandle;
+exports.createPopupMenu = createPopupMenu;
+exports.openDialog = openDialog;
 exports.db = db;
+exports.scrapers = scrapers;
+exports.scanner = scanner;
 exports.player = player;

@@ -141,7 +141,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		$scope.hasFocus = 'modal';
 
 		// show modal
-		$scope.modal = $modal({ title: "Confirm Ignore", templateUrl: "/public/views/partials/modal_ignore_confirm.html", scope: $scope });
+		$scope.modal = $modal({ title: "Confirm Ignore", templateUrl: `${pubpath}/views/partials/modal_ignore_confirm.html`, scope: $scope });
 
 		// callback
 		$scope.modal.confirm = function() {
@@ -187,7 +187,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		$scope.hasFocus = 'modal';
 
 		// build modal confirmation dialog
-		$scope.modal = $modal({ title: "Confirm Delete", templateUrl: "/public/views/partials/modal_basic.html", scope: $scope, content: "Delete file(s) from disk and remove corresponding database entries? <br/><b>This cannot be undone</b>" });
+		$scope.modal = $modal({ title: "Confirm Delete", templateUrl: `${pubpath}/views/partials/modal_basic.html`, scope: $scope, content: "Delete file(s) from disk and remove corresponding database entries? <br/><b>This cannot be undone</b>" });
 		$scope.modal.confirmText = "Delete";
 		$scope.modal.confirmClass = "btn-danger";
 		$scope.modal.contentIcon = "fa-warning";
@@ -221,7 +221,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 					$scope.sprop.epdata = $scope.sprop.episodeSelected = $scope.epdata[$scope.sprop.episode_id];
 
 					// build modal properties dialog
-					$scope.modal = $modal({ title: iid, templateUrl: "/public/views/partials/modal_prop_file.html", scope: $scope });
+					$scope.modal = $modal({ title: iid, templateUrl: `${pubpath}/views/partials/modal_prop_file.html`, scope: $scope });
 
 					$scope.modal.confirm = function() {
 						var pfails = [];
@@ -316,7 +316,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 			logthis.debug2("seriesPropDiag modal data", $scope.sprop);
 
 			// build modal properties dialog
-			$scope.modal = $modal({ title: iid, templateUrl: "/public/views/partials/modal_prop_series.html", scope: $scope });
+			$scope.modal = $modal({ title: iid, templateUrl: `${pubpath}/views/partials/modal_prop_series.html`, scope: $scope });
 
 			// set up 'save' callback
 			$scope.modal.confirm = function() {
@@ -384,7 +384,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		}
 
 		// build modal properties dialog
-		$scope.ssmodal = $modal({ title: "Add Series: Search", templateUrl: "/public/views/partials/modal_addseries.html", scope: $scope });
+		$scope.ssmodal = $modal({ title: "Add Series: Search", templateUrl: `${pubpath}/views/partials/modal_addseries.html`, scope: $scope });
 		$scope.ssmodal.inputIsValid = false;
 		$scope.ssmodal.results = [];
 
@@ -393,7 +393,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 			logthis.debug("seriesSearch: selected tvdb id = %s", selected);
 			if(selected) {
 				// create progress modal
-				$scope.modalWait = $modal({ title: "Retrieving Series Information...", templateUrl: "/public/views/partials/modal_wait.html", scope: $scope, content: "Retrieving data from TheTVDb" });
+				$scope.modalWait = $modal({ title: "Retrieving Series Information...", templateUrl: `${pubpath}/views/partials/modal_wait.html`, scope: $scope, content: "Retrieving data from TheTVDb" });
 				$scope.modalWait.contentIcon = "fa-cog fa-spin";
 
 				tkcore.scrapers.tvdb_get_series(selected, function(newdata) {
@@ -478,7 +478,14 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 	$scope.openLocal = function() {
 		// launch 'open folder' dialog and create callback
-		_lib_openDirDialog(function(sdir) {
+		_lib_openDirDialog(function(dirlist) {
+			var sdir;
+			if(typeof dirlist == 'undefined') {
+				logthis.debug("No directories selected");
+				return;
+			} else {
+				sdir = dirlist[0];
+			}
 			logthis.verbose("Scanning directory: %s", sdir);
 			$scope.scanStatus = { title: "Scanning", content: "Scanning directory: "+sdir, iconClassList: ['fa','fa-spin','fa-moon-o'], show: true };
 			tkcore.scanner.xbake_scandir(sdir, function(sdata) {
@@ -592,7 +599,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		$scope.sprop = { group: null, vscap_auto: true, group_list: tkconfig.groups };
 
 		// build modal properties dialog
-		$scope.modal = $modal({ title: "Import Configuration", templateUrl: "/public/views/partials/modal_import.html", scope: $scope });
+		$scope.modal = $modal({ title: "Import Configuration", templateUrl: `${pubpath}/views/partials/modal_import.html`, scope: $scope });
 
 		$scope.modal.confirm = function() {
 			var idata = { group: $scope.sprop.group, vscap_auto: $scope.sprop.vscap_auto };
@@ -796,16 +803,34 @@ function _lib_rview_contextmenu(evt) {
 		if(tkversion.os == "darwin") delkey = "Backspace";
 
 		// create context menu
-		var fmenu = new nw.Menu();
-		fmenu.append(new nw.MenuItem({ label: "Add to Selection", key: "Enter", click: $scope.addToSelection }));
-		fmenu.append(new nw.MenuItem({ type: 'separator' }));
-		fmenu.append(new nw.MenuItem({ label: "Properties...", click: $scope.filePropDiag }));
-		fmenu.append(new nw.MenuItem({ type: 'separator' }));
-		fmenu.append(new nw.MenuItem({ label: "Ignore", key: delkey, click: $scope.ignoreSelected }));
-		fmenu.append(new nw.MenuItem({ label: "Delete", key: delkey, modifiers: "shift", click: $scope.deleteSelected }));
-
-		// pop it gud
-		fmenu.popup(evt.x, evt.y);
+		var fmenu = [
+			{
+				label: 'Add to Selection',
+				accelerator: 'Enter',
+				click: $scope.addToSelection
+			},
+			{
+				type: 'separator'
+			},
+			{
+				label: 'Properties...',
+				click: $scope.filePropDiag
+			},
+			{
+				type: 'separator'
+			},
+			{
+				label: 'Ignore',
+				accelerator: delkey,
+				click: $scope.ignoreSelected
+			},
+			{
+				label: 'Delete',
+				accelerator: 'Shift+'+delkey,
+				click: $scope.deleteSelected
+			}
+		];
+		tkcore.createPopupMenu(fmenu, evt.x, evt.y);
 	}
 
 	evt.preventDefault();
@@ -827,14 +852,27 @@ function _lib_tree_contextmenu(evt) {
 		if(tkversion.os == "darwin") delkey = "Backspace";
 
 		// create context menu
-		var fmenu = new nw.Menu();
-		fmenu.append(new nw.MenuItem({ label: "Properties...", click: $scope.seriesPropDiag }));
-		fmenu.append(new nw.MenuItem({ label: "Change identifier..." }));
-		fmenu.append(new nw.MenuItem({ type: 'separator' }));
-		fmenu.append(new nw.MenuItem({ label: "Ignore All", key: delkey, click: $scope.ignoreSelected }));
+		var fmenu = [
+			{
+				label: 'Properties...',
+				click: $scope.seriesPropDiag
+			},
+			{
+				label: 'Change Identifier...',
+				accelerator: 'F2'
+				// TODO: implement click callback
+			},
+			{
+				type: 'separator'
+			},
+			{
+				label: 'Ignore All',
+				accelerator: delkey,
+				click: $scope.ignoreSelected
+			}
+		];
 
-		// pop it gud
-		fmenu.popup(evt.x, evt.y);
+		tkcore.createPopupMenu(fmenu, evt.x, evt.y);
 	}
 
 	evt.preventDefault();
@@ -842,6 +880,7 @@ function _lib_tree_contextmenu(evt) {
 }
 
 function _lib_openDirDialog(_cbx) {
+	/*
 	var od = $('#openDialog');
 	od.attr('nwdirectory', true);
 	od.unbind('change');
@@ -850,6 +889,8 @@ function _lib_openDirDialog(_cbx) {
 		_cbx($('#openDialog').val());
 	});
 	od.trigger('click');
+	*/
+	tkcore.openDialog({title: "Import Directory...", buttonLabel: 'Import', properties: ['openDirectory']}, _cbx);
 }
 
 function _lib_openFileDialog(_cbx) {

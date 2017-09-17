@@ -27,6 +27,9 @@ const logthis = remote.getGlobal('logger');
 var tkconfig = remote.getGlobal('settings');
 var tkversion = process.versions;
 
+const basepath = remote.getGlobal('basepath');
+const pubpath = basepath + '/app/public';
+
 // Once scripts are loaded, move out of the splash cycle
 $(function() {
 	// TODO: maybe check `status` value and do something here
