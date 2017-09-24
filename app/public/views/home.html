@@ -1,7 +1,7 @@
-<!--routes/watch_home-->
+<!--routes/home-->
 <div class="tsk-subnav">
-	<div id="subnav-tv" class="tsk-subnav-nav" ng-repeat="(gkey, gname) in group_list">
-		<a href="/public/index.html#!/watch/{{gkey}}">{{gname}}</a>
+	<div id="{{'subnav-tv-' + gkey}}" class="tsk-subnav-nav not-selected" ng-repeat="(gkey, gname) in group_list">
+		<a href="#!/view/{{gkey}}">{{gname}}</a>
 	</div>
 </div>
 
@@ -21,7 +21,7 @@
 			<span class="tsk-epgroup-newep-number-season">{{newep._episode.season}}</span>-
 			<span class="tsk-epgroup-newep-number-episode">{{newep._episode.episode}}</span>
 		</div>
-	</div>sad
+	</div>
 </div>
 
-<!--//routes/watch_home-->
+<!--//routes/home-->

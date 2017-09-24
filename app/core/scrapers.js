@@ -26,7 +26,7 @@ var tvdb_banpath = "http://thetvdb.com/banners";
 var tvdb_token = null;
 var trequest = request.defaults({ baseUrl: tvdb_baseuri, json: true, headers: { 'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)" } });
 var xrequest = request.defaults({ baseUrl: "http://thetvdb.com/api/"+tvdb_apikey, headers: { 'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)" } });
-
+var brequest = request.defaults({ headers: { 'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)" } });
 
 function tvdb_auth(_cbx) {
 	if(tvdb_token) {
@@ -216,14 +216,15 @@ function tvdb_get_artwork(serid, adefs, _cbx) {
 						var bb = fix_xml_result(blist[bi]);
 						var bantype = bb.BannerType.trim().toLowerCase();
 						var tart =  {
+										id: bb.id,
+										source: 'tvdb',
+										lang: bb.Language,
+										default: false,
+										selected: false,
+										season: (bb.Season || '0'),
 										url: tvdb_banpath+'/'+bb.BannerPath,
 										path: bb.BannerPath,
-										type2: bb.BannerType2,
-										tvdb_id: bb.id,
-										lang: bb.Language,
-										season: (bb.Season || '0'),
-										default: false,
-										selected: false
+										type2: bb.BannerType2
 									};
 						if(bantype.match(/^(banner|fanart|poster|series|season)$/)) {
 							if(bantype == 'series') bantype = 'banners';
@@ -251,6 +252,69 @@ function tvdb_get_artwork(serid, adefs, _cbx) {
 	});
 }
 
+function tvdb_fetch_series_images(serdata, _cbx) {
+	var artdata = serdata.artwork;
+	var imgs = [];
+	var ilist = [];
+
+	var _fetch_images = function(idex, _cxx) {
+		var tart = ilist[idex];
+
+		// `encoding: null` *must* be set to prevent request from mangling the response
+		// by trying to decode it as UTF-8. instead, it returns `body` as a Buffer() object
+		logthis.debug("Fetching image '%s'...", tart.url);
+		brequest({ url: tart.url, encoding: null }, function(err, resp, body) {
+			if(resp.statusCode == 200) {
+				if(resp.headers['content-type'].match(/^image/i)) {
+					var ttype = tart._ttype;
+					delete(tart._ttype);
+
+					var tobj = {
+						_id: `${tart.source}_${tart.id}`,
+						img: body.toString('base64'),
+						mimetype: resp.headers['content-type'],
+						imgtype: ttype,
+						metadata: tart,
+						lastupdated: parseInt((new Date).getTime() / 1000),
+						parent: {
+							id: serdata._id,
+							type: 'series'
+						}
+					};
+					imgs.push(tobj);
+					logthis.verbose("Saved image '%s' --> %s", tart.url, tobj._id);
+				} else {
+					logthis.warning("Invalid MIME type '%s' for '%s'", resp.headers['content-type'], tart.url);
+				}
+			} else {
+				logthis.error("Failed to fetch %s: %s", tart.url, err);
+			}
+
+			idex++;
+			if(idex == ilist.length) {
+				_cxx(imgs);
+			} else {
+				_fetch_images(idex, _cxx);
+			}
+		});
+	};
+
+	// create list of images to fetch
+	for(var ttype in artdata) {
+		//ilist = ilist.concat(artdata[ttype].filter(function(x) { return x.default || x.selected; }));
+		for(var tdex in artdata[ttype]) {
+			var tart = artdata[ttype][tdex];
+			if(tart.default || tart.selected) {
+				tart._ttype = ttype;
+				ilist.push(tart);
+			}
+		}
+	}
+
+	logthis.verbose("Preparing to fetch %d images for %s...", ilist.length, serdata._id);
+	_fetch_images(0, _cbx);
+}
+
 function fix_xml_result(inarr) {
 	// xml2js turns single-element tags into arrays... every time
 	// what a fucking pain
@@ -271,6 +335,7 @@ function fix_xml_result(inarr) {
 
 exports.tvdb_search			= tvdb_search;
 exports.tvdb_get_series		= tvdb_get_series;
+exports.tvdb_fetch_series_images = tvdb_fetch_series_images;
 
 exports.__tvdb_auth			= tvdb_auth;
 exports.__tvdb_token		= tvdb_token;

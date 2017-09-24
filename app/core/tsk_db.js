@@ -17,9 +17,11 @@
 /* jshint -W049 */
 
 var MongoClient = require('mongodb').MongoClient;
-var events = require('events');
-var logthis = require('./logthis');
-var scanner = require('./scanner');
+const _ = require('lodash');
+const events = require('events');
+const logthis = require('./logthis');
+const scanner = require('./scanner');
+const {tvdb_fetch_series_images} = require('./scrapers');
 
 var emitter = new events.EventEmitter();
 var monjer = false;
@@ -120,6 +122,109 @@ function query_videos_rr(qparams, _cbx) {
 			resolveDocument(docs, 0, _cbx);
 		} else {
 			_cbx(err, []);
+		}
+	});
+}
+
+function query_series_rr(qparams, _cbx) {
+	var slist = [];
+
+	var resolveSeries = function(dlist, curIndex, _cbx) {
+		var tgroup = dlist[curIndex];
+
+		// series lookup
+		monjer.collection('series').findOne({ _id: tgroup.series_id }, function(err, tser) {
+			if(err) logthis.error("RefResolver: Series lookup for %s failed:", tgroup.series_id, err);
+
+			// episode lookup
+			monjer.collection('episodes').find({ series_id: tgroup.series_id }).toArray(function(err, eplist) {
+				if(err) logthis.error("RefResolver: Episode lookup for %s failed:", tgroup.series_id, err);
+
+				// image lookup
+				get_series_images(tser, function(imgs) {
+					tser['episodes'] = eplist;
+					tser['_groupdata'] = tgroup;
+					tser['_imgdata'] = imgs;
+					slist.push(tser);
+
+					curIndex++;
+					if(curIndex < dlist.length) {
+						resolveSeries(dlist, curIndex, _cbx);
+					} else {
+						_cbx(null, slist);
+					}
+				});
+			});
+		});
+	};
+
+	get_series_groups(qparams, function(err, docs) {
+		if(docs.length > 0) {
+			resolveSeries(docs, 0, _cbx);
+		} else {
+			_cbx(err, []);
+		}
+	});
+}
+
+function get_series_groups(qparams, _cbx) {
+	// group/reduce by series_id
+	var reducer = function(curr,result) {
+					if(curr.series_id) result.series_id = curr.series_id;
+					result.count++;
+					result.groups = result.groups.concat(curr.groups);
+				  };
+
+	// run aggregation
+	monjer.collection('videos').group({ series_id: 1 }, qparams, { count: 0, groups: [] }, reducer, function(err, docs) {
+		if(err) logthis.error("get_series_groups: Series group aggro failed", qparams, err);
+
+		// consolidate group listings
+		for(tgroup in docs) {
+			docs[tgroup].groups = _.union(docs[tgroup].groups);
+		}
+
+		logthis.debug("get_series_groups: returned %d groups", docs.length, { err: err, docs: docs });
+		_cbx(err, docs);
+	});
+}
+
+function get_series_images(serdata, _cbx, run_count = 0) {
+	// retrieves images for the specified series from the database,
+	// or downloads them if they are not available locally
+	var qdata = {
+		'parent.id': serdata._id,
+		'parent.type': "series",
+		'$or': [
+			{ 'metadata.default': true },
+			{ 'metadata.selected': true }
+		]
+	};
+
+	monjer.collection('images').find(qdata).toArray(function(err, docs) {
+		if(err) {
+			logthis.error("Failed to fetch series images", err);
+			_cbx([]);
+		} else if(docs.length == 0 && run_count == 0) {
+			logthis.info("Series images not found in database; re-scraping images from source...");
+			tvdb_fetch_series_images(serdata, function(idata_new) {
+				if(idata_new.length) {
+					put_image_data(idata_new, function(err) {
+						if(err) logthis.error("Failed to save image data", err);
+						//xget_series_images(serdata, _cbx, 1);
+						_cbx(idata_new);
+					});
+				} else {
+					logthis.error("Failed to fetch series images; retry failed [a]");
+					_cbx([]);
+				}
+			});
+		} else if(docs.length == 0 && run_count > 0) {
+			logthis.error("Failed to fetch series images; retry failed [b]");
+			_cbx([]);
+		} else {
+			logthis.verbose("Fetched series images for '%s' (count=%d)", serdata._id, docs.length);
+			_cbx(docs);
 		}
 	});
 }
@@ -551,6 +656,25 @@ function import_selection(selection, iconfig, cbProgress, _cbx) {
 	vidImport(selection, 0, _cbx);
 }
 
+function put_image_data(idata, _cbx) {
+	monjer.collection('images').insert(idata, function(err, rdoc) {
+		if(!err) logthis.verbose("Inserted images OK");
+		else logthis.error("Error when adding new image entries", { error: err, result: rdoc});
+		_cbx(err);
+	});
+}
+
+function get_image_data(id, _cbx) {
+	monjer.collection('images').findOne({ _id: id }, function(err, docs) {
+		if(err) logthis.error("Failed to retrieve image data for '%s'", id, { err: err, docs: docs });
+		_cbx(docs);
+	});
+}
+
+function get_images(qparams, _cbx) {
+	monjer.collection('images').findOne(qparams, _cbx);
+}
+
 function normalize(instr) {
 	return instr.replace(/[ ★☆\.]/g,'_').replace(/['`\-\?!%&\*@\(\)#:,\/\\;\+=\[\]\{\}\$\<\>]/g,'').toLowerCase().trim();
 }
@@ -563,6 +687,8 @@ exports.connect				= connect;
 exports.close				= close;
 exports.query_videos		= query_videos;
 exports.query_videos_rr		= query_videos_rr;
+exports.query_series_rr		= query_series_rr;
+exports.get_series_groups	= get_series_groups;
 exports.get_video			= get_video;
 exports.get_video_byid		= get_video_byid;
 exports.query_series		= query_series;
@@ -583,3 +709,7 @@ exports.update_file_series	= update_file_series;
 exports.update_series		= update_series;
 exports.get_file_data		= get_file_data;
 exports.import_selection	= import_selection;
+exports.put_image_data		= put_image_data;
+exports.get_image_data		= get_image_data;
+exports.get_images			= get_images;
+exports.get_series_images   = get_series_images;

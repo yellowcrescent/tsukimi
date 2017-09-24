@@ -26,11 +26,13 @@ const db = require('./core/tsk_db');
 const player = require('./core/player');
 const scrapers = require('./core/scrapers');
 const scanner = require('./core/scanner');
+const fsutils = require('./core/fsutils');
 global.logger = require('./core/logthis');
 
 const {app, ipcMain, dialog} = electron;
 
 let windowMain;
+let lastPosition;
 global.basepath = app.getAppPath();
 
 // default settings
@@ -286,6 +288,45 @@ function openDialog(opts, _cbx) {
     return dialog.showOpenDialog(windowMain, opts, _cbx);
 }
 
+function setFullscreenFlag(flag) {
+    windowMain.setFullScreen(flag);
+    logger.debug("setFullscreenFlag: flag = %s", (flag ? 'true' : 'false'));
+}
+
+function setFullscreen(drect) {
+    var display;
+
+    if(typeof drect == 'undefined' || drect === null) {
+        display = electron.screen.getDisplayMatching(windowMain.getBounds());
+    } else {
+        display = electron.screen.getDisplayMatching(drect);
+    }
+    logger.debug("setFullscreen: display  =", display);
+
+    var dbounds = display.bounds;
+
+    lastPosition = windowMain.getBounds();
+    logger.debug("setFullscreen: saved lastPosition =", lastPosition);
+
+    windowMain.setPosition(dbounds.x, dbounds.y);
+    windowMain.setSize(dbounds.width, dbounds.height);
+    windowMain.setAlwaysOnTop(true);
+    logger.debug("setFullscreen: set %d x %d @ %d,%d", dbounds.width, dbounds.height, dbounds.x, dbounds.y);
+}
+
+function setWindowed() {
+    windowMain.setAlwaysOnTop(false);
+    if(lastPosition) {
+        windowMain.setSize(lastPosition.width, lastPosition.height);
+        windowMain.setPosition(lastPosition.x, lastPosition.y);
+        logger.debug("setWindowed: restored geometry from lastPosition");
+    } else {
+        windowMain.setSize(1920, 1080);
+        windowMain.center();
+        logger.debug("setWindowed: restored geometry to build-in defaults");
+    }
+}
+
 global.getWindowHandle = function() {
     var hwnd = windowMain.getNativeWindowHandle();
     return Buffer.from(hwnd).readUInt32LE(0);
@@ -295,7 +336,13 @@ global.getWindowHandle = function() {
 exports.getWindowHandle = getWindowHandle;
 exports.createPopupMenu = createPopupMenu;
 exports.openDialog = openDialog;
+exports.setFullscreen = setFullscreen;
+exports.setFullscreenFlag = setFullscreenFlag;
+exports.setWindowed = setWindowed;
+
 exports.db = db;
 exports.scrapers = scrapers;
 exports.scanner = scanner;
 exports.player = player;
+exports.fsutils = fsutils;
+

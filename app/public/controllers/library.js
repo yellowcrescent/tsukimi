@@ -401,13 +401,24 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 						// update modal text
 						$scope.modalWait.content = "Updating database";
 						_lib_scopeApply($scope);
+
 						// add series and episodes to database
 						tkcore.db.add_series_full(tdexId, newdata.result, function(addrez) {
 							if(addrez.status == "ok") {
 								logthis.verbose("Series added to database OK; tdex_id=%s / series_id=%s", addrez.new_tdex, addrez.series_id);
-								$scope.modalWait.hide();
-								$scope.ssmodal.hide();
-								if(_cbx) _cbx(addrez.series_id);
+
+								// fetch default series images (banner, poster, etc.)
+								$scope.modalWait.content = "Fetching images";
+								newdata.result._id = addrez.series_id;
+								_lib_scopeApply($scope);
+								tkcore.scrapers.tvdb_fetch_series_images(newdata.result, function(imgdata) {
+									tkcore.db.put_image_data(imgdata, function(err) {
+										logthis.verbose("Fetched series images OK");
+										$scope.modalWait.hide();
+										$scope.ssmodal.hide();
+										if(_cbx) _cbx(addrez.series_id);
+									});
+								});
 							}
 						});
 					} else {
@@ -487,7 +498,14 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 				sdir = dirlist[0];
 			}
 			logthis.verbose("Scanning directory: %s", sdir);
-			$scope.scanStatus = { title: "Scanning", content: "Scanning directory: "+sdir, iconClassList: ['fa','fa-spin','fa-moon-o'], show: true };
+			$scope.scanStatus = {
+				title: "Scanning",
+				content: "Scanning directory: "+sdir,
+				iconClassList: ['fa','fa-spin','fa-moon-o'],
+				show: true,
+				totalFiles: 0,
+				numFiles: 0
+			};
 			tkcore.scanner.xbake_scandir(sdir, function(sdata) {
 				switch(sdata.msgtype) {
 					case '_exception':
@@ -504,6 +522,8 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 							$scope.scanStatus.iconClassList = ['fa','fa-exclamation-triangle'];
 							$scope.refresh();
 						}
+						// reset subnavStatus background
+						$('#subnavStatus').css('background', 'rgba(30,30,30,0.2)');
 						break;
 					case 'complete':
 						logthis.info("XBake scan complete -- files: %d / series: %d", sdata.files, sdata.series);
@@ -516,11 +536,18 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 						logthis.info("Scanning file: %s", sdata.filename);
 						$scope.scanStatus.title = "Scanning";
 						$scope.scanStatus.content = sdata.filename;
+						$scope.scanStatus.numFiles++;
+						var pct = parseInt($scope.scanStatus.numFiles / $scope.scanStatus.totalFiles * 100);
+						$('#subnavStatus').css('background', `linear-gradient(to right, rgba(30,30,30,0.2), rgba(20,20,20,0.4) ${pct}%, transparent ${pct}%)`);
+						break;
+					case 'scanlist':
+						logthis.info("Files to scan: %d", sdata.scanlist.length);
+						$scope.scanStatus.totalFiles = sdata.scanlist.length;
 						break;
 					case 'series_scrape':
-						logthis.info("Scraping: %s (%s)", sdata.tdex_id, sdata.tdex_data.title);
+						logthis.info("Scraping: %s (%s)", sdata.tdex_id, sdata.tdex_data);
 						$scope.scanStatus.title = "Scraping";
-						$scope.scanStatus.content = sdata.tdex_id+" ("+sdata.tdex_data.title+")";
+						$scope.scanStatus.content = sdata.tdex_id+" ("+sdata.tdex_data+")";
 						break;
 					default:
 						logthis.debug("[xbake status] %s: %j", sdata.msgtype, sdata, {});
@@ -720,6 +747,8 @@ function _lib_event_keydown(evt) {
 	var delkey = "Delete";
 	if(tkversion.os == "darwin") delkey = "Backspace";
 
+	console.log("keydown event:", evt);
+
 	if($scope.hasFocus == 'modal' && $scope.modal.$isShown === true) {
 		if(evt.code == "Enter" || evt.code == "NumpadEnter") {
 			$scope.modal.confirm();
@@ -880,16 +909,6 @@ function _lib_tree_contextmenu(evt) {
 }
 
 function _lib_openDirDialog(_cbx) {
-	/*
-	var od = $('#openDialog');
-	od.attr('nwdirectory', true);
-	od.unbind('change');
-	od.val(null);
-	od.change(function(evt) {
-		_cbx($('#openDialog').val());
-	});
-	od.trigger('click');
-	*/
 	tkcore.openDialog({title: "Import Directory...", buttonLabel: 'Import', properties: ['openDirectory']}, _cbx);
 }
 

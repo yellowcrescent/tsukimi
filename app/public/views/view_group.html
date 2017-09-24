@@ -1,0 +1,51 @@
+<!--routes/view_group-->
+<div class="tsk-subnav">
+    <div id="{{'subnav-tv-' + gkey}}" class="tsk-subnav-nav" ng-class="{'not-selected': gkey != group, 'selected': gkey == group}" ng-repeat="(gkey, gname) in group_list">
+        <a href="#!/view/{{gkey}}">{{gname}}</a>
+    </div>
+    <div id="view-menu" class="tsk-subnav-menu dropdown">
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="view-menu-link" bs-dropdown data-placement="bottom-right" title="Options">
+            <span class="fa fa-bars fa-2x"></span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#"><span class="fa fa-refresh"></span>Refresh</a></li>
+            <li><a class="dropdown-item" href="#"><span class="fa fa-cube"></span>Display options...</a></li>
+            <li class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#"><span class="fa fa-hashtag"></span>Configure groups...</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- fanart background + overlay -->
+<div id="bg-fanart">
+    <div id="bg-overlay"></div>
+</div>
+<!--// -->
+
+<!--<div id="recent-adds-header" class="tsk-epheader" ng-bind="groupName"></div>-->
+
+<div id="series-list" class="tsk-epgroup">
+    <div id="series_{{tseries._id}}" class="tsk-poster"
+         ng-repeat="tseries in serlist | orderBy:watchOrder:watchOrderRev | limitTo:watchLimit"
+         ng-mouseover="showSeriesInfo(tseries._id)" ng-click="selectSeries(tseries._id)">
+        <div class="tsk-poster-img">
+            <img ng-src="{{imglist[tseries._id]}}" />
+        </div>
+    </div>
+
+    <div class="tsk-bottombuffer"></div>
+</div>
+
+<div class="tsk-infobox" id="infobox">
+    <div class="tsk-infobox-inner">
+        <div class="tsk-infobox-heading" ng-bind="infobox.title"></div>
+        <div class="tsk-infobox-subheading">
+            <div ng-bind="infobox.year"></div>
+            <div ng-bind="infobox.genres"></div>
+            <div><span ng-bind="infobox.se_count"></span> Seasons</div>
+            <div><span ng-bind="infobox.ep_count"></span> Episodes</div>
+        </div>
+        <div class="tsk-infobox-desc" ng-bind="infobox.desc"></div>
+    </div>
+</div>
+<!--//routes/view_group-->

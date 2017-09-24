@@ -21,6 +21,10 @@
 const electron = require('electron');
 const {remote, ipcRenderer} = electron;
 
+const _ = require('lodash');
+const moment = require('moment');
+const iso639 = require('iso-639-1');
+
 const tkcore = remote.require('./index');
 const logthis = remote.getGlobal('logger');
 
@@ -67,9 +71,21 @@ tsukimi.config(
 				templateUrl: 'views/splash.html',
 				controller: splashController
 			})
-			.when('/watch', {
-				templateUrl: 'views/watch_home.html',
-				controller: watchHomeController
+			.when('/home', {
+				templateUrl: 'views/home.html',
+				controller: homeController
+			})
+			.when('/view/:group', {
+				templateUrl: 'views/view_group.html',
+				controller: viewGroupController
+			})
+			.when('/view/:group/:series', {
+				templateUrl: 'views/view_series.html',
+				controller: viewSeriesController
+			})
+			.when('/view/:group/:series/:episode', {
+				templateUrl: 'views/view_episode.html',
+				controller: viewEpisodeController
 			})
 			.when('/library', {
 				templateUrl: 'views/library.html',
@@ -91,18 +107,18 @@ tsukimi.config(
 /**
  * Route change hook
  **/
-var path2id = { "": null, "/": "splash", "/watch": "watch", "/library": "library", "/settings": "settings", "/about": "about" };
+var path2id = { "": null, "/": "splash", "/home": "watch", "/view": "watch", "/library": "library", "/settings": "settings", "/about": "about" };
 
 tsukimi.run(['$rootScope','$location','$routeParams', function($rootScope, $location, $routeParams) {
 	$rootScope.$on('$routeChangeSuccess', function(evt, cur, prev) {
 		try {
-			old_path = prev.$$route.originalPath;
+			old_path = '/' + prev.$$route.originalPath.split('/')[1];
 			op_id = path2id[old_path];
 			if(op_id) $('#nav-'+op_id).removeClass('active');
 		} catch(e) {
 			//console.log("old_path undefined");
 		}
-		new_path = cur.$$route.originalPath;
+		new_path = '/' + cur.$$route.originalPath.split('/')[1];
 		np_id = path2id[new_path];
 		$('#nav-'+np_id).addClass('active');
 	});
@@ -122,6 +138,14 @@ function _deepCopy(obj) {
 
 function _jsonCopy(obj) {
 	return JSON.parse(JSON.stringify(obj));
+}
+
+function getGlobalCssVar(cvar) {
+	return $(':root')[0].style.getPropertyValue(cvar);
+}
+
+function setGlobalCssVar(cvar, cval) {
+	return $(':root')[0].style.setProperty(cvar, cval);
 }
 
 // Allow multiple modals

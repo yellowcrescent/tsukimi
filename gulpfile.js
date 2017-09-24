@@ -80,7 +80,7 @@ gulp.task('mods', function() {
 });
 
 // linting task
-var jsource = [ 'app/*.js', 'app/public/*.js', 'app/controllers/*.js' ];
+var jsource = [ 'app/*.js', 'app/public/*.js', 'app/public/controllers/*.js' ];
 var jreporter = 'jshint-stylish';
 
 gulp.task('lint', function() {

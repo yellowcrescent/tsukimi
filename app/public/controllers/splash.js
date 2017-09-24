@@ -23,5 +23,5 @@ function onConfigLoad(err) {
 	// callback for tkcore.browserInit() from tsukimi.js
 	console.log("onConfigLoad");
 	$('#splash').addClass('shidden');
-	window.location.hash = '#!/watch';
+	window.location.hash = '#!/home';
 }
