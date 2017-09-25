@@ -1,0 +1,51 @@
+<!--routes/view_series-->
+<div class="tsk-subnav">
+    <div id="{{'subnav-tv-' + gkey}}" class="tsk-subnav-nav" ng-class="{'not-selected': gkey != group, 'selected': gkey == group}" ng-repeat="(gkey, gname) in group_list">
+        <a href="#!/view/{{gkey}}">{{gname}}</a>
+    </div>
+    <div id="view-menu" class="tsk-subnav-menu dropdown">
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="view-menu-link" bs-dropdown data-placement="bottom-right" title="Options">
+            <span class="fa fa-bars fa-2x"></span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#"><span class="fa fa-refresh"></span>Refresh</a></li>
+            <li><a class="dropdown-item" href="#"><span class="fa fa-cube"></span>Display options...</a></li>
+            <li class="dropdown-divider"></li>
+            <li><a class="dropdown-item" ng-click="showImgSelector()"><span class="fa fa-picture-o"></span>Image selector...</a></li>
+            <li><a class="dropdown-item" href="#"><span class="fa fa-edit"></span>Series properties...</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- fanart background + overlay -->
+<div id="bg-fanart" ng-style="imgdata.fanart">
+    <div id="bg-overlay"></div>
+</div>
+<!--// -->
+
+<!-- series info header -->
+<div id="series-header" class="tsk-serhead">
+    <div class="tsk-serhead-inner">
+        <div class="tsk-serhead-poster">
+            <img ng-src="{{imgdata.poster}}" />
+        </div>
+        <div class="tsk-serhead-ibox">
+            <div class="tsk-serhead-ibox-title" ng-bind="series_info.title"></div>
+            <div class="tsk-serhead-ibox-subline">
+                <span ng-bind="series_info.year"></span>
+                <span class="vertsep"></span>
+                <span ng-bind="series_info.genres"></span>
+                <span class="vertsep"></span>
+                <span ng-bind="series_info.tv_network"></span>
+            </div>
+            <div class="tsk-serhead-desc" ng-bind="series_info.desc"></div>
+        </div>
+    </div>
+</div>
+<!--// -->
+
+<!-- include chosen view template -->
+<div ng-include src="view_template"></div>
+<!--// -->
+
+<!--//routes/view_series-->

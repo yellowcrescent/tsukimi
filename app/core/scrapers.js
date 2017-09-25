@@ -223,6 +223,7 @@ function tvdb_get_artwork(serid, adefs, _cbx) {
 										selected: false,
 										season: (bb.Season || '0'),
 										url: tvdb_banpath+'/'+bb.BannerPath,
+										thumb_url: (bb.ThumbnailPath ? tvdb_banpath+'/'+bb.ThumbnailPath : null),
 										path: bb.BannerPath,
 										type2: bb.BannerType2
 									};
@@ -252,10 +253,12 @@ function tvdb_get_artwork(serid, adefs, _cbx) {
 	});
 }
 
-function tvdb_fetch_series_images(serdata, _cbx) {
+function fetch_series_images(serdata, _cbx) {
 	var artdata = serdata.artwork;
 	var imgs = [];
 	var ilist = [];
+
+	console.log("fetch_series_images: serdata:", serdata);
 
 	var _fetch_images = function(idex, _cxx) {
 		var tart = ilist[idex];
@@ -264,30 +267,35 @@ function tvdb_fetch_series_images(serdata, _cbx) {
 		// by trying to decode it as UTF-8. instead, it returns `body` as a Buffer() object
 		logthis.debug("Fetching image '%s'...", tart.url);
 		brequest({ url: tart.url, encoding: null }, function(err, resp, body) {
-			if(resp.statusCode == 200) {
+			if(resp.statusCode == 200 && !err) {
 				if(resp.headers['content-type'].match(/^image/i)) {
-					var ttype = tart._ttype;
-					delete(tart._ttype);
-
 					var tobj = {
 						_id: `${tart.source}_${tart.id}`,
 						img: body.toString('base64'),
 						mimetype: resp.headers['content-type'],
-						imgtype: ttype,
+						imgtype: tart._ttype,
 						metadata: tart,
 						lastupdated: parseInt((new Date).getTime() / 1000),
 						parent: {
-							id: serdata._id,
+							id: tart._series,
+							setref: null,
 							type: 'series'
 						}
 					};
+
+					delete(tobj.metadata._ttype);
+					delete(tobj.metadata._series);
 					imgs.push(tobj);
 					logthis.verbose("Saved image '%s' --> %s", tart.url, tobj._id);
 				} else {
 					logthis.warning("Invalid MIME type '%s' for '%s'", resp.headers['content-type'], tart.url);
 				}
 			} else {
-				logthis.error("Failed to fetch %s: %s", tart.url, err);
+				if(err) {
+					logthis.error("Failed to fetch %s: request error", tart.url, err);
+				} else {
+					logthis.error("Failed to fetch %s: statusCode = %d", tart.url, resp.statusCode, resp, body);
+				}
 			}
 
 			idex++;
@@ -301,11 +309,11 @@ function tvdb_fetch_series_images(serdata, _cbx) {
 
 	// create list of images to fetch
 	for(var ttype in artdata) {
-		//ilist = ilist.concat(artdata[ttype].filter(function(x) { return x.default || x.selected; }));
 		for(var tdex in artdata[ttype]) {
 			var tart = artdata[ttype][tdex];
 			if(tart.default || tart.selected) {
 				tart._ttype = ttype;
+				tart._series = serdata._id;
 				ilist.push(tart);
 			}
 		}
@@ -314,6 +322,76 @@ function tvdb_fetch_series_images(serdata, _cbx) {
 	logthis.verbose("Preparing to fetch %d images for %s...", ilist.length, serdata._id);
 	_fetch_images(0, _cbx);
 }
+
+function fetch_episode_images(eplist, _cbx) {
+	var ilist = [];
+	var imgs = [];
+	var ilist = [];
+
+	console.log("fetch_episode_images: eplist:", eplist);
+
+	var _fetch_images = function(idex, _cxx) {
+		var tart = ilist[idex];
+
+		// `encoding: null` *must* be set to prevent request from mangling the response
+		// by trying to decode it as UTF-8. instead, it returns `body` as a Buffer() object
+		logthis.debug("Fetching image '%s'...", tart.url);
+		brequest({ url: tart.url, encoding: null }, function(err, resp, body) {
+			if(resp.statusCode == 200 && !err) {
+				if(resp.headers['content-type'].match(/^image/i)) {
+					var tobj = {
+						_id: `${tart.source}_${tart.id}`,
+						img: body.toString('base64'),
+						mimetype: resp.headers['content-type'],
+						imgtype: 'episode',
+						metadata: tart,
+						lastupdated: parseInt((new Date).getTime() / 1000),
+						parent: {
+							id: tart._episode,
+							setref: tart._series,
+							type: 'episode'
+						}
+					};
+					delete(tobj.metadata._episode);
+					delete(tobj.metadata._series);
+					imgs.push(tobj);
+					logthis.verbose("Saved image '%s' --> %s", tart.url, tobj._id);
+				} else {
+					logthis.warning("Invalid MIME type '%s' for '%s'", resp.headers['content-type'], tart.url);
+				}
+			} else {
+				if(err) {
+					logthis.error("Failed to fetch %s: request error", tart.url, err);
+				} else {
+					logthis.error("Failed to fetch %s: statusCode = %d", tart.url, resp.statusCode, resp, body);
+				}
+			}
+
+			idex++;
+			if(idex == ilist.length) {
+				_cxx(imgs);
+			} else {
+				_fetch_images(idex, _cxx);
+			}
+		});
+	};
+
+	// build list of images from episodes
+	for(var tepi in eplist) {
+		for(var tdex in eplist[tepi].images) {
+			var tart = eplist[tepi].images[tdex];
+			if(tart.default || tart.selected) {
+				tart._episode = eplist[tepi]._id;
+				tart._series = eplist[tepi].series_id;
+				ilist.push(tart);
+			}
+		}
+	}
+
+	logthis.verbose("Preparing to fetch images for %d episodes...", eplist.length);
+	_fetch_images(0, _cbx);
+}
+
 
 function fix_xml_result(inarr) {
 	// xml2js turns single-element tags into arrays... every time
@@ -335,7 +413,8 @@ function fix_xml_result(inarr) {
 
 exports.tvdb_search			= tvdb_search;
 exports.tvdb_get_series		= tvdb_get_series;
-exports.tvdb_fetch_series_images = tvdb_fetch_series_images;
+exports.fetch_series_images = fetch_series_images;
+exports.fetch_episode_images = fetch_episode_images;
 
 exports.__tvdb_auth			= tvdb_auth;
 exports.__tvdb_token		= tvdb_token;

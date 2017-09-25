@@ -17,6 +17,10 @@
 function viewGroupController($scope, $location, $routeParams, $http) {
     console.log("viewGroupController start");
 
+    var template_map = {
+        posters: {url: 'views/view_group/posters.html', imgtype: 'poster'}
+    };
+
     $scope.group = $routeParams.group;
     $scope.groupName = tkconfig.groups[$scope.group];
     $scope.group_list = tkconfig.groups;
@@ -25,11 +29,13 @@ function viewGroupController($scope, $location, $routeParams, $http) {
     // build query string
     var qparam = {groups: {'$in': [$scope.group]}};
 
-    // set default filter values
+    // set default filter & view values
+    $scope.viewMode = 'posters';
     $scope.watchOrder = 'title';
     $scope.watchOrderRev = false;
     $scope.watchLimit = null;
-    $scope.watchImgType = 'poster';
+    $scope.watchImgType = template_map[$scope.viewMode].imgtype;
+    $scope.view_template = template_map[$scope.viewMode].url;
 
     $scope.showSeriesInfo = function(ser_id) {
         // show info on a bottom or sidebar area, or overlaid on the poster itself
@@ -37,7 +43,7 @@ function viewGroupController($scope, $location, $routeParams, $http) {
 
         try {
             tseries = $scope.serlist.filter(function(x) { return x._id == ser_id; })[0];
-            console.log(`showSeriesInfo: ${ser_id}`);
+            //console.log(`showSeriesInfo: ${ser_id}`);
         } catch(e) {
             console.log(`showSeriesInfo: failed to fetch series '${ser_id}' from serlist`);
             return;
@@ -47,12 +53,7 @@ function viewGroupController($scope, $location, $routeParams, $http) {
         season_count = _.union(tseries.episodes.map(function(x) { return x.season; })).filter(function(x) { return x; }).length;
 
         // get fanart
-        try {
-            tfanart = tseries._imgdata.filter(function(x) { return x.imgtype == 'fanart'; })[0];
-        } catch(e) {
-            tfanart = null;
-            console.log(`Failed to get fanart for ${ser_id}`);
-        }
+        tfanart = get_selected_image(tseries._imgdata, 'fanart', tseries._id);
 
         // populate the infobox
         $scope.infobox = {
@@ -90,7 +91,7 @@ function viewGroupController($scope, $location, $routeParams, $http) {
         $scope.imglist = {};
         for(tser in rez) {
             try {
-                var timg = rez[tser]._imgdata.filter(function(x) { return x.imgtype == $scope.watchImgType; })[0]; /* jshint ignore:line */
+                var timg = get_selected_image(rez[tser]._imgdata, $scope.watchImgType, rez[tser]._id);
                 $scope.imglist[rez[tser]._id] = 'data:' + timg.mimetype + ';base64,' + timg.img;
                 logthis.debug("matching %s for %s -> %s", $scope.watchImgType, rez[tser]._id, timg._id);
             } catch(e) {

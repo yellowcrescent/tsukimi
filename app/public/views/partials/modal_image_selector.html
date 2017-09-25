@@ -1,0 +1,57 @@
+
+<div id="mdiag" class="modal">
+  <div class="modal-dialog tsk-diag-wide">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true" ng-click="$hide()">&times;</button>
+        <h4 class="modal-title" ng-bind="title"></h4>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="form-group col-xs-6">
+            <label for="sprop_tdex_id">Series ID</label>
+            <input type="text" class="form-control" id="ic_series_id" ng-model="serdata._id" disabled />
+          </div>
+          <div class="form-group col-xs-6">
+            <label for="sprop_series_id">Image Type</label>
+            <div class="input-group">
+              <select class="form-control" id="ic_imgtype" ng-model="imgChooser.imgtype"
+                      ng-options="option for option in imgChooser.imgtype_list"
+                      ng-change="modal.typeChange()">
+              </select>
+            </div>
+            <p class="help-block">Select an image type to change</p>
+          </div>
+
+          <div class="tsk-imglist">
+            <table class="table tsk-imglist-tab">
+              <tbody>
+                <tr ng-repeat="timg in serdata.artwork[imgChooser.imgtype] track by timg.id" id="row_{{timg.id}}"
+                    class="tsk-tser-row" ng-class="{warning: timg.default, success: timg.selected}">
+                  <td>
+                    <!-- ng-change="modal.inputChange(imgChooser.imgtype, timg.source, timg.id)" -->
+                    <!--
+                    <input type="radio" ng-model="imgChooser.selection[imgChooser.imgtype]"
+                           ng-value="{{timg.source + '_' + timg.id}}"
+                           name="imgsel" id="imgsel_{{timg.id}}" />
+                    -->
+                    <input type="radio" ng-value="timg.source + '_' + timg.id" name="imgsel" id="imgsel_{{timg.id}}"
+                           ng-model="imgChooser.curSelection" ng-change="modal.inputChange()" />
+                  </td>
+                  <td>
+                    <img class="tsk-imglist-img" ng-src="{{timg.url}}" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="$hide()">Cancel</button>
+        <button type="button" class="btn btn-success" ng-click="modal.confirm()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>

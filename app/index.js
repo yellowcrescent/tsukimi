@@ -27,6 +27,7 @@ const player = require('./core/player');
 const scrapers = require('./core/scrapers');
 const scanner = require('./core/scanner');
 const fsutils = require('./core/fsutils');
+const utils = require('./core/utils');
 global.logger = require('./core/logthis');
 
 const {app, ipcMain, dialog} = electron;
@@ -345,4 +346,4 @@ exports.scrapers = scrapers;
 exports.scanner = scanner;
 exports.player = player;
 exports.fsutils = fsutils;
-
+exports.utils = utils;

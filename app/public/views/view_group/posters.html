@@ -1,0 +1,26 @@
+<!--routes/view_group:posters-->
+<div id="series-list" class="tsk-epgroup">
+    <div id="series_{{tseries._id}}" class="tsk-poster"
+         ng-repeat="tseries in serlist | orderBy:watchOrder:watchOrderRev | limitTo:watchLimit"
+         ng-mouseover="showSeriesInfo(tseries._id)" ng-click="selectSeries(tseries._id)">
+        <div class="tsk-poster-img">
+            <img ng-src="{{imglist[tseries._id]}}" />
+        </div>
+    </div>
+
+    <div class="tsk-bottombuffer"></div>
+</div>
+
+<div class="tsk-infobox" id="infobox">
+    <div class="tsk-infobox-inner">
+        <div class="tsk-infobox-heading" ng-bind="infobox.title"></div>
+        <div class="tsk-infobox-subheading">
+            <div ng-bind="infobox.year"></div>
+            <div ng-bind="infobox.genres"></div>
+            <div><span ng-bind="infobox.se_count"></span> Seasons</div>
+            <div><span ng-bind="infobox.ep_count"></span> Episodes</div>
+        </div>
+        <div class="tsk-infobox-desc" ng-bind="infobox.desc"></div>
+    </div>
+</div>
+<!--//routes/view_group:posters -->

@@ -406,19 +406,11 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 						tkcore.db.add_series_full(tdexId, newdata.result, function(addrez) {
 							if(addrez.status == "ok") {
 								logthis.verbose("Series added to database OK; tdex_id=%s / series_id=%s", addrez.new_tdex, addrez.series_id);
-
-								// fetch default series images (banner, poster, etc.)
-								$scope.modalWait.content = "Fetching images";
-								newdata.result._id = addrez.series_id;
+								//newdata.result._id = addrez.series_id;
 								_lib_scopeApply($scope);
-								tkcore.scrapers.tvdb_fetch_series_images(newdata.result, function(imgdata) {
-									tkcore.db.put_image_data(imgdata, function(err) {
-										logthis.verbose("Fetched series images OK");
-										$scope.modalWait.hide();
-										$scope.ssmodal.hide();
-										if(_cbx) _cbx(addrez.series_id);
-									});
-								});
+								$scope.modalWait.hide();
+								$scope.ssmodal.hide();
+								if(_cbx) _cbx(addrez.series_id);
 							}
 						});
 					} else {

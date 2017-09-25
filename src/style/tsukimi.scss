@@ -69,6 +69,49 @@ body {
 	background: linear-gradient($bg_grad_top, $bg_grad_bot);
 }
 
+::-webkit-scrollbar {
+	width: 15px;
+	height: 15px;
+
+	&-button {
+		width: 0px;
+		height: 0px;
+	}
+
+	&-thumb {
+		background: rgba(20,20,20,0.7);
+		border-radius: 50px;
+		border: none;
+
+		&:hover {
+			background: rgba(30,30,30,0.7);
+			border: 1px solid rgba(250,250,250,0.2);
+		}
+
+		&:active {
+			background: rgba(30,30,30,0.7);
+			border: 1px solid rgba(250,250,250,0.8);
+		}
+	}
+
+	&-track {
+		background-image: linear-gradient(to right, rgba(80,80,80,1.0), rgba(100,100,100,1.0) 50%, rgba(80,80,80,1.0));
+		border: 1px solid rgba(255,255,255,0.2);
+
+		&:hover {
+			background-image: linear-gradient(to right, rgba(100,100,100,1.0), rgba(120,120,120,1.0) 50%, rgba(100,100,100,1.0));
+		}
+
+		&:active {
+			background-image: linear-gradient(to right, rgba(100,100,100,1.0), rgba(120,120,120,1.0) 50%, rgba(100,100,100,1.0));
+		}
+	}
+
+	&-corner {
+		background: transparent;
+	}
+}
+
 .tsk-view {
 	overflow: hidden;
 	padding: 0px;
@@ -292,6 +335,7 @@ body {
 				&>a {
 					color: rgba(240,240,240,1.0);
 					transition: all 0.25s ease-in;
+					cursor: pointer;
 
 					&:hover {
 						color: rgba(40,40,40,1.0);
@@ -593,4 +637,15 @@ body {
 	opacity: 0;
 	height: 0;
 	transition: opacity 0.8s linear, height 0s;
+}
+
+.tsk-imglist {
+	height: 600px;
+	overflow: auto;
+	clear: both;
+
+	&-img {
+		max-width: 650px;
+		max-height: 350px;
+	}
 }

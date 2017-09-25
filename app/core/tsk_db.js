@@ -21,7 +21,8 @@ const _ = require('lodash');
 const events = require('events');
 const logthis = require('./logthis');
 const scanner = require('./scanner');
-const {tvdb_fetch_series_images} = require('./scrapers');
+const utils = require('./utils');
+const {fetch_series_images, fetch_episode_images} = require('./scrapers');
 
 var emitter = new events.EventEmitter();
 var monjer = false;
@@ -98,20 +99,28 @@ function query_videos_rr(qparams, _cbx) {
 			monjer.collection('episodes').findOne({ _id: tvid.episode_id }, function(err, tep) {
 				if(err) logthis.error("RefResolver: Episode lookup for %s failed:", tvid.episode_id, err);
 
-				// file lookup
-				qfiles = {};
-				resolveFiles(tvid.sources, 0, function(tfiles) {
-					tvid['_series'] = tser;
-					tvid['_episode'] = tep;
-					tvid['_files'] = tfiles;
-					qvids.push(tvid);
+				// episode image lookup
+				monjer.collection('images').findOne({ 'parent.id': tvid.episode_id, 'parent.type': "episode",
+													  '$or': [{ 'metadata.default': true }, { 'metadata.selected': true }] },
+													  function(err, timg) {
+					if(err) logthis.error("RefResolver: Image lookup for %s failed:", tvid.episode_id, err);
 
-					curIndex++;
-					if(curIndex < vids.length) {
-						resolveDocument(vids, curIndex, _cbx);
-					} else {
-						_cbx(qerr, qvids);
-					}
+					// file lookup
+					qfiles = {};
+					resolveFiles(tvid.sources, 0, function(tfiles) {
+						tvid['_series'] = tser;
+						tvid['_episode'] = tep;
+						tvid['_files'] = tfiles;
+						tvid['_img'] = (timg ? timg: utils.color_bars);
+						qvids.push(tvid);
+
+						curIndex++;
+						if(curIndex < vids.length) {
+							resolveDocument(vids, curIndex, _cbx);
+						} else {
+							_cbx(qerr, qvids);
+						}
+					});
 				});
 			});
 		});
@@ -207,7 +216,7 @@ function get_series_images(serdata, _cbx, run_count = 0) {
 			_cbx([]);
 		} else if(docs.length == 0 && run_count == 0) {
 			logthis.info("Series images not found in database; re-scraping images from source...");
-			tvdb_fetch_series_images(serdata, function(idata_new) {
+			fetch_series_images(serdata, function(idata_new) {
 				if(idata_new.length) {
 					put_image_data(idata_new, function(err) {
 						if(err) logthis.error("Failed to save image data", err);
@@ -224,6 +233,46 @@ function get_series_images(serdata, _cbx, run_count = 0) {
 			_cbx([]);
 		} else {
 			logthis.verbose("Fetched series images for '%s' (count=%d)", serdata._id, docs.length);
+			_cbx(docs);
+		}
+	});
+}
+
+function get_series_episode_images(eplist, _cbx, run_count = 0) {
+	// retrieves episode images for the specified series from the database,
+	// or downloads them if they are not available locally
+	var series_id = eplist[0].series_id;
+	var qdata = {
+		'parent.setref': series_id,
+		'parent.type': "episode",
+		'$or': [
+			{ 'metadata.default': true },
+			{ 'metadata.selected': true }
+		]
+	};
+
+	monjer.collection('images').find(qdata).toArray(function(err, docs) {
+		if(err) {
+			logthis.error("Failed to fetch episode images", err);
+			_cbx([]);
+		} else if(docs.length == 0 && run_count == 0) {
+			logthis.info("Episode images not found in database; re-scraping images from source...");
+			fetch_episode_images(eplist, function(idata_new) {
+				if(idata_new.length) {
+					put_image_data(idata_new, function(err) {
+						if(err) logthis.error("Failed to save image data", err);
+						_cbx(idata_new);
+					});
+				} else {
+					logthis.error("Failed to fetch episode images; retry failed [a]");
+					_cbx([]);
+				}
+			});
+		} else if(docs.length == 0 && run_count > 0) {
+			logthis.error("Failed to fetch episode images; retry failed [b]");
+			_cbx([]);
+		} else {
+			logthis.verbose("Fetched episode images for '%s' (count=%d)", series_id, docs.length);
 			_cbx(docs);
 		}
 	});
@@ -452,6 +501,14 @@ function episode_schema_update(epdata, serid, epid) {
 					synopsis: {
 								tvdb: epdata.Overview
 							  },
+					images: [{
+								source: 'tvdb',
+								id: `${epdata.seriesid}-${epdata.id}`,
+								type: 'screenshot',
+								url: `http://thetvdb.com/banners/${epdata.filename}`,
+								default: true,
+								selected: false
+							}],
 					default_synopsis: 'tvdb',
 					scrape_time: parseInt(Date.now() / 1000)
 				};
@@ -628,22 +685,36 @@ function import_selection(selection, iconfig, cbProgress, _cbx) {
 								vdata.vscap = vscap;
 							}
 
-							// upsert into videos collection
-							monjer.collection('videos').update({_id: tvid_id}, vdata, {upsert: true}, function(err, rdoc) {
-								if(err) logthis.error("Failed to upsert video entry for %s", tvid_id, err);
+							// fetch episode images
+							fetch_episode_images([tep], function(timglist) {
+								var timg = null;
+								if(timglist.length) {
+									logthis.debug("Fetched episode image OK");
+									timg = timglist[0];
+								}
 
-								// update file status
-								tfile.status = "complete";
-								monjer.collection('files').update({_id: tfile._id}, tfile, function(err, rdoc) {
-									if(err) logthis.error("Failed to update file status for %s", tfile._id, err);
+								// upsert episode image into database
+								monjer.collection('images').update({_id: (timg ? timg._id : null)}, timg, {upsert: true}, function(err, rdoc) {
+									if(err && timg) logthis.error("Failed to upsert episode image entry for %s", timg._id, err);
 
-									// on to the next one
-									curIndex++;
-									if(curIndex < numSelection) {
-										vidImport(slist, curIndex, _cbx);
-									} else {
-										_cbx(err);
-									}
+									// upsert into videos collection
+									monjer.collection('videos').update({_id: tvid_id}, vdata, {upsert: true}, function(err, rdoc) {
+										if(err) logthis.error("Failed to upsert video entry for %s", tvid_id, err);
+
+										// update file status
+										tfile.status = "complete";
+										monjer.collection('files').update({_id: tfile._id}, tfile, function(err, rdoc) {
+											if(err) logthis.error("Failed to update file status for %s", tfile._id, err);
+
+											// on to the next one
+											curIndex++;
+											if(curIndex < numSelection) {
+												vidImport(slist, curIndex, _cbx);
+											} else {
+												_cbx(err);
+											}
+										});
+									});
 								});
 							});
 						});
@@ -656,8 +727,44 @@ function import_selection(selection, iconfig, cbProgress, _cbx) {
 	vidImport(selection, 0, _cbx);
 }
 
+function sync_series_image_metadata(serdata, _cbx) {
+
+	monjer.collection('images').find({ 'parent.id': serdata._id, 'parent.type': 'series' }).toArray(function(err, idata) {
+		if(err) {
+			logthis.error("Failed to fetch images for series '%s'", serdata._id, err);
+			_cbx(err);
+		}
+
+		var bulk = monjer.collection('images').initializeUnorderedBulkOp();
+
+		for(var tdex in idata) {
+			try {
+				var tart = serdata.artwork[idata[tdex].imgtype].filter(function(x) { return `${x.source}_${x.id}` == idata[tdex]._id; })[0];
+			} catch(e) {
+				logthis.debug("sync_series_image_metadata: no matching artwork found for image '%s'", idata[tdex]._id);
+				continue;
+			}
+
+			idata[tdex].metadata = tart;
+			bulk.find({ _id: idata[tdex]._id }).upsert().replaceOne(idata[tdex]);
+		}
+
+		bulk.execute(function(err, rdoc) {
+			if(err) logthis.error("Bulk metadata update for '%s' series images failed", serdata._id, err);
+			_cbx(err);
+		});
+	});
+
+}
+
 function put_image_data(idata, _cbx) {
-	monjer.collection('images').insert(idata, function(err, rdoc) {
+	var bulk = monjer.collection('images').initializeUnorderedBulkOp();
+
+	for(var tdex in idata) {
+		bulk.find({ _id: idata[tdex]._id }).upsert().replaceOne(idata[tdex]);
+	}
+
+	bulk.execute(function(err, rdoc) {
 		if(!err) logthis.verbose("Inserted images OK");
 		else logthis.error("Error when adding new image entries", { error: err, result: rdoc});
 		_cbx(err);
@@ -672,7 +779,7 @@ function get_image_data(id, _cbx) {
 }
 
 function get_images(qparams, _cbx) {
-	monjer.collection('images').findOne(qparams, _cbx);
+	monjer.collection('images').find(qparams).toArray(_cbx);
 }
 
 function normalize(instr) {
@@ -712,4 +819,5 @@ exports.import_selection	= import_selection;
 exports.put_image_data		= put_image_data;
 exports.get_image_data		= get_image_data;
 exports.get_images			= get_images;
+exports.sync_series_image_metadata = sync_series_image_metadata;
 exports.get_series_images   = get_series_images;

@@ -1,0 +1,47 @@
+<!--routes/view_series:tiled-->
+<div id="recent-adds" class="tsk-epgroup">
+    <div class="tsk-epgroup-ep" ng-repeat="newep in vidlist | orderBy:watchOrder:watchOrderRev | limitTo:watchLimit">
+        <div class="tsk-epgroup-ep-img">
+            <!--
+            <img ng-src="file://{{tkconfig.data_dir}}/ss/full/{{newep.vscap.filename}}"
+                 ng-mouseover="showEpisodeInfo(newep._id)"
+                 ng-click="playVideoByPath(newep._files[newep.sources[0].id].location[newep._files[newep.sources[0].id].default_location].fpath.real)" />
+            -->
+            <img ng-src="data:{{newep._img.mimetype}};base64,{{newep._img.img}}"
+                 ng-mouseover="showEpisodeInfo(newep._id)"
+                 ng-click="playVideoByPath(newep._files[newep.sources[0].id].location[newep._files[newep.sources[0].id].default_location].fpath.real)" />
+        </div>
+        <div class="tsk-epgroup-ep-number">
+            <span class="tsk-epgroup-ep-number-season">{{newep._episode.season}}</span>-
+            <span class="tsk-epgroup-ep-number-episode">{{newep._episode.episode}}</span>
+        </div>
+        <div class="tsk-epgroup-ep-txt">
+            <div class="tsk-epgroup-ep-title">{{newep._episode.title}}</div>
+        </div>
+    </div>
+
+    <div class="tsk-bottombuffer"></div>
+</div>
+
+<div class="tsk-infobox tsk-infobox-epinfo" id="infobox">
+    <div class="tsk-infobox-inner">
+        <div class="tsk-infobox-epnumbers"><span ng-bind="infobox.season"></span>.<span ng-bind="infobox.episode"></span></div>
+        <div class="tsk-infobox-epheading" ng-bind="infobox.title"></div>
+        <div class="tsk-infobox-subheading">
+            <div ng-bind="infobox.first_aired"></div>
+            <div><span ng-bind="infobox.vheight"></span>p</div>
+            <div>Runtime: <span ng-bind="infobox.duration"></span></div>
+            <div>
+                <span ng-bind="infobox.vformat"></span>
+                <span ng-show="infobox.vprofile">(<span ng-bind="infobox.vprofile"></span>)</span>
+            </div>
+            <div ng-repeat="ttrack in infobox.atracks">
+                <span ng-show="ttrack.language" ng-bind="ttrack.lang_full"></span>
+                <span>{{ttrack.format | uppercase}}</span>
+                (<span ng-bind="ttrack.channels"></span>ch @ <span>{{ttrack.sampling_rate / 1000}}</span>kHz)
+            </div>
+        </div>
+        <div class="tsk-infobox-desc" ng-bind="infobox.desc"></div>
+    </div>
+</div>
+<!--//routes/view_series:tiled -->

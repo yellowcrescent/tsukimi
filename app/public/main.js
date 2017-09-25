@@ -76,11 +76,11 @@ tsukimi.config(
 				controller: homeController
 			})
 			.when('/view/:group', {
-				templateUrl: 'views/view_group.html',
+				templateUrl: 'views/view_group/index.html',
 				controller: viewGroupController
 			})
 			.when('/view/:group/:series', {
-				templateUrl: 'views/view_series.html',
+				templateUrl: 'views/view_series/index.html',
 				controller: viewSeriesController
 			})
 			.when('/view/:group/:series/:episode', {
@@ -146,6 +146,28 @@ function getGlobalCssVar(cvar) {
 
 function setGlobalCssVar(cvar, cval) {
 	return $(':root')[0].style.setProperty(cvar, cval);
+}
+
+function get_selected_image(imglist, imgtype, xid) {
+    var timg, tdef, tsel;
+
+    try {
+        tsel = imglist.filter(function(x) { return x.imgtype == imgtype && x.metadata.selected; });
+        tdef = imglist.filter(function(x) { return x.imgtype == imgtype && x.metadata.default; });
+        if(tsel.length) {
+            timg = tsel[0];
+        } else if(tdef.length) {
+            timg = tdef[0];
+        } else {
+            logthis.warning(`No ${imgtype} images matched for ${xid}`);
+            timg = tkcore.utils.color_bars;
+        }
+    } catch(e) {
+        timg = tkcore.utils.color_bars;
+        logthis.error(`Failed to get ${imgtype} for ${xid}`);
+    }
+
+    return timg;
 }
 
 // Allow multiple modals
