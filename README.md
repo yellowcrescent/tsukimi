@@ -54,7 +54,6 @@ Compass and Sass will also be installed. These require Ruby 1.9+ and Rubygems to
 ```
 sudo gem install compass
 sudo npm install -g bower gulp node-gyp
-sudo apt-get install icoutils icnsutils
 ```
 
 ### Fetch & Build
@@ -73,27 +72,17 @@ If everything goes smoothly, you should now be able to run tsukimi after updatin
 gulp run
 ```
 
-### Building Release Distributions
-
-To build redist packages for the current version and platform (Windows, OS X, and Linux):
-```
-gulp buildall
-```
-
-Since there are native modules that need to be built, you will only be able to build for the current host platform.
-
-#### Manually building dependencies
-
 Everything should be automagically built by Gulp. If for some reason that fails, or you
-need to build them yourself, instructions follow.
+need to build dependencies yourself, instructions follow.
 
 __Compile native modules__
 
-Build `fs-xattr`
+Build `fs-xattr` (for 64-bit use `x64`, for 32-bit use `ia32`). Cross-compiling 32-bit on a 64-bit platform
+requires gcc-multilib to be installed on your OS. This module is required to access extended file attributes.
 
 ```
 cd node_modules/fs-xattr
-node-gyp build --target=ELECTRON_VERSION --arch=x64 --dist-url=https://atom.io/download/electron
+node-gyp build --target=ELECTRON_VERSION --arch=ARCH --dist-url=https://atom.io/download/electron
 ```
 
 Be sure to replace `ELECTRON_VERSION` with the current version of Electron in use.
@@ -114,7 +103,26 @@ From `tsukimi` base directory, run
 bower install
 ```
 
-### Configure
+## Building Release Distributions
+
+Install required software for packaging the release
+```
+sudo apt-get -y install icoutils icnsutils ghostscript imagemagick libgs-dev rpm bsdtar snapcraft gcc-multilib g++-multilib
+```
+
+To build redist packages for the current version and platform (Windows, OS X, and Linux):
+```
+gulp buildall
+```
+
+Since there are native modules that need to be built, you will only be able to build for the current host platform.
+
+__Manually building__
+```
+
+```
+
+## Configure
 
 First, copy the example configuration
 

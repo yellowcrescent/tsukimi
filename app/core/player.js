@@ -17,6 +17,9 @@
 const child_process = require('child_process');
 const fs = require('fs');
 const logger = require('./logthis');
+const net = require('net');
+
+var mpv_sockpath = __dirname + '/mpv.sock';
 
 exports.mpv_play = function(infile, xargs, _cbx) {
 
@@ -54,6 +57,7 @@ exports.mpv_play = function(infile, xargs, _cbx) {
     if(xargs.sub_track) mopts.push('--sid=' + xargs.sub_track);
     if(xargs.audio_track) mopts.push('--aid=' + xargs.audio_track);
     mopts.push('--quiet', infile);
+    mopts.push('--input-ipc-server=' + mpv_sockpath);
 
     // spawn mpv process
     logger.info("Playing video: %s", infile);
@@ -61,13 +65,14 @@ exports.mpv_play = function(infile, xargs, _cbx) {
     var mpv = child_process.spawn(settings.mpv_path, mopts);
 
     // set up event listeners
-    var odata;
+    var mpv_started = false;
     mpv.stdout.on('data', function(data) {
+        if(!mpv_started) {
+            _cbx({ msgtype: "_start", file: infile });
+            mpv_ipc_client(_cbx);
+            mpv_started = true;
+        }
         console.log("[mpv] " + data.toString());
-    });
-
-    mpv.on('open', function(exitCode) {
-        _cbx({ msgtype: "_start", file: infile });
     });
 
     mpv.on('close', function(exitCode) {
@@ -75,3 +80,31 @@ exports.mpv_play = function(infile, xargs, _cbx) {
     });
 
 };
+
+function mpv_ipc_client(evt_cbx) {
+
+    console.log("[mpv_ipc_client] establishing IPC connection...");
+    var sock = new net.Socket();
+    sock.connect(mpv_sockpath, function() {
+        console.log("[mpv_ipc_client] connected to mpv JSON IPC interface");
+        if(evt_cbx) {
+            evt_cbx({ msgtype: "_ipc_control", status: "connect", sock: sock.write });
+        }
+    });
+
+    sock.on('data', function(data) {
+        console.log("[mpv_ipc_client] %s", data);
+        if(evt_cbx) {
+            evt_cbx({ msgtype: "_ipc_data", data: data });
+        }
+
+    });
+
+    sock.on('close', function() {
+        console.log("[mpv_ipc_client] IPC connection closed");
+        if(evt_cbx) {
+            evt_cbx({ msgtype: "_ipc_control", status: "disconnect" });
+        }
+    });
+
+}

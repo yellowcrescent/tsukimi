@@ -62,7 +62,8 @@ global.xconf = {
                 config_files: [ '%/tsukimi/settings.json', '~/.tsukimi/settings.json', '/opt/tsukimi/settings.json', './settings.json' ],
                 default_path: '%/tsukimi/settings.json',
                 local_path: null,
-                status: 'not_ready'
+                status: 'not_ready',
+                devtools: false
             };
 
 
@@ -90,6 +91,8 @@ global.xconf = {
             }
         });
     });
+
+    app.setAppUserModelId(pkgdata.build.appId);
 })();
 
 app.on('ready', function() {
@@ -102,7 +105,7 @@ app.on('ready', function() {
     }
 
     // spawn dev tools
-    windowMain.openDevTools();
+    if(xconf.devtools) windowMain.openDevTools();
 });
 
 app.on('window-all-closed', function() {
@@ -155,6 +158,10 @@ function tskParseArgs(args, _cbx) {
     // config file
     if(opts.config) {
         xconf.config_files.push(opts.config);
+    }
+
+    if(opts.devtools) {
+        xconf.devtools = true;
     }
 
     logger.debug("raw args: %j", opts, {});

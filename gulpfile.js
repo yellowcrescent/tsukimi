@@ -23,6 +23,8 @@ const NwBuilder = require('nw-builder');
 const C = gutil.colors;
 const spawn = require('child_process').spawnSync;
 const electron = require('electron');
+const im = require('imagemagick');
+const gs = require('ghostscript-js');
 const basedir = process.cwd();
 
 // compass task:
@@ -93,10 +95,10 @@ gulp.task('lint', function() {
 });
 
 // build Mac ICNS
-gulp.task('icon_icns', function() {
+gulp.task('icon_icns', ['icons'], function() {
     // output icns file, followed by n-number of power-of-two png icons
     mkdirp.sync('build', {mode: 0755});
-    var icnsArgs = [ "build/tsukimi.icns", "icons/tsukimi_icon.png" ];
+    var icnsArgs = [ "build/icon.icns", "build/icons/1024x1024.png" ];
     var sout = spawn('png2icns', icnsArgs);
     if(sout.error || sout.status) {
         gutil.log('icon_icns', C.red("Failed to build Mac icns file: "+sout.error));
@@ -107,10 +109,10 @@ gulp.task('icon_icns', function() {
 });
 
 // build Windows ICO
-gulp.task('icon_ico', function() {
+gulp.task('icon_ico', ['icons'], function() {
     // output ico file, followed by n-number of power-of-two png icons
     mkdirp.sync('build', {mode: 0755});
-    var icoArgs = [ "-c", "-o", "app/tsukimi.ico", "icons/tsukimi_icon.png" ];
+    var icoArgs = [ "-c", "-o", "build/icon.ico", "build/icons/1024x1024.png" ];
     var sout = spawn('icotool', icoArgs);
     if(sout.error || sout.status) {
         gutil.log('icon_ico', C.red("Failed to build Windows ico file: "+sout.error));
@@ -118,6 +120,59 @@ gulp.task('icon_ico', function() {
         console.dir(sout);
     }
     gutil.log('icon_ico', "Windows ico file compiled OK");
+});
+
+function resizeImage(srcimg, width, height, dpi, outimg) {
+    return new Promise(function(resolve, reject) {
+        im.convert([srcimg, '-resize', `${width}x${height}`, outimg], function(err, stdout) {
+            if(err) {
+                gutil.log('resizeImage', `Failed to resize ${srcimg}: ${err}`);
+                reject(err);
+            } else {
+                gutil.log('resizeImage', `Resized image: ${srcimg} --> ${outimg}`);
+                resolve();
+            }
+        });
+    });
+}
+
+function gsConvert(srcimg, dpi, outimg) {
+    return new Promise(function(resolve, reject) {
+        gs.exec(['-q', '-dQUIET', '-dSAFER', '-dBATCH', '-dNOPAUSE', '-dNOPROMPT',
+                 '-sDEVICE=pngalpha', `-r${dpi}x${dpi}`, `-sOutputFile=${outimg}`, srcimg], function(err) {
+            if(err) {
+                gutil.log('gsConvert', `Failed to convert ${srcimg}: ${err}`);
+                reject(err);
+            } else {
+                gutil.log('gsConvert', `Generated raster image: ${srcimg} --> ${outimg}`);
+                resolve();
+            }
+        });
+    });
+}
+
+gulp.task('icons', function() {
+    var icoSrc = 'src/icons/tsukimi_icon.ai';
+    var outBase = 'build/icons';
+    var imedPath = `${outBase}/raster.png`
+    var icoSizes = [1024, 512, 256, 128, 96, 72, 64, 48, 32, 16];
+
+    mkdirp.sync(outBase, {mode: 0755});
+
+    return gsConvert(icoSrc, 1200, imedPath).then(function(res, err) {
+        var promises = [];
+        for(var tdex in icoSizes) {
+            var tsize = icoSizes[tdex];
+            promises.push(resizeImage(imedPath, tsize, tsize, 1024, `${outBase}/${tsize}x${tsize}.png`));
+        }
+        return Promise.all(promises);
+    });
+});
+
+// cleanup task
+gulp.task('build-dist', function() {
+    mkdirp.sync('build-dist', {mode: 0755});
+
 });
 
 // cleanup task
@@ -137,22 +192,29 @@ gulp.task('distclean', ['clean'], function() {
                         'node_modules',
                         'app/vendor'
                     ];
-    gutil.log('clean', "removing build artifacts, modules, cached binaries, and Compass products:\n\t" + cleanlist.join('\n\t'));
+    gutil.log('distclean', "removing build artifacts, modules, cached binaries, and Compass products:\n\t" + cleanlist.join('\n\t'));
     return del(cleanlist);
 });
 
 // run application in dev environment
-gulp.task('runapp', function() {
+gulp.task('devapp', function() {
+    gutil.log(C.white.underline("Spawning Electron application in dev mode..."));
+    var eproc = spawn(electron, [ '.', '--loglevel=debug', '--devtools' ], { cwd: basedir, stdio: 'inherit', stdout: 'inherit', stderr: 'inherit' });
+    gutil.log("Execution terminated; return value (%d)", eproc.status);
+});
+
+// run app in production-like environment
+gulp.task('run', function() {
     gutil.log(C.white.underline("Spawning Electron application..."));
-    var eproc = spawn(electron, [ '.', '--loglevel=debug' ], { cwd: basedir, stdio: 'inherit', stdout: 'inherit', stderr: 'inherit' });
+    var eproc = spawn(electron, [ '.' ], { cwd: basedir, stdio: 'inherit', stdout: 'inherit', stderr: 'inherit' });
     gutil.log("Execution terminated; return value (%d)", eproc.status);
 });
 
 // default task
 gulp.task('default', [ 'lint', 'bower', 'compass', 'mods', 'native_mods' ]);
-gulp.task('build', [ 'icon_icns', 'icon_ico' ]);
-gulp.task('build-dbg', [ 'icon_icns', 'icon_ico' ]);
+gulp.task('build', [ 'icons', 'icon_icns', 'icon_ico', 'build-dist' ]);
+gulp.task('build-dbg', [ 'icons', 'icon_icns', 'icon_ico' ]);
 //gulp.task('buildall', [ 'default', 'build' ]);
 //gulp.task('buildall-dbg', [ 'default', 'build-dbg' ]);
-gulp.task('run', ['lint', 'compass', 'runapp']);
+gulp.task('dev', ['lint', 'compass', 'runapp']);
 

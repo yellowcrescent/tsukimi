@@ -4,6 +4,7 @@ settings.json
 
 coverage
 test
+dist
 build
 build-dbg
 .cache

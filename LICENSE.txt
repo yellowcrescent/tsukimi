@@ -1,5 +1,9 @@
 
-Tsukimi, Copyright (c) 2014-2017 Jacob Hipps/Neo-Retro Group, Inc.
+tsukimi
+Copyright © 2014-2017 Jacob Hipps/Neo-Retro Group, Inc., all rights reserved.
+
+Ryo Gothic Plus, Myriad Pro, and Flyer LT Std fonts are
+© 1993-2014 Adobe Systems, Inc. Used under license.
 
 Mozilla Public License Version 2.0
 ==================================
@@ -38,7 +42,7 @@ Mozilla Public License Version 2.0
     means any form of the work other than Source Code Form.
 
 1.7. "Larger Work"
-    means a work that combines Covered Software with other material, in 
+    means a work that combines Covered Software with other material, in
     a separate file or files, that is not Covered Software.
 
 1.8. "License"
