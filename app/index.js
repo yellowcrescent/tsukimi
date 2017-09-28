@@ -46,7 +46,8 @@ global.settings = {
                     "mpv_options": {
                         "fullscreen": false,
                         "pulseaudio_name": "tsukimi",
-                        "volume_gain": 0
+                        "volume_gain": 0,
+                        "legacy_options": false
                     },
                     "groups": {
                         "tv": "TV",
@@ -109,10 +110,10 @@ app.on('ready', function() {
 });
 
 app.on('window-all-closed', function() {
-    if(process.platform != 'darwin') {
-        logger.info("All windows closed; Terminating");
-        app.quit();
-    }
+    //if(process.platform != 'darwin') {
+    // Close on OS X, too. Otherwise, it's damn annoying
+    logger.info("All windows closed; Terminating");
+    app.quit();
 });
 
 app.on('closed', function() {
@@ -226,7 +227,7 @@ function tskLoadLocalConfig(_cbx) {
             fs.readFile(cpath, function(err, data) {
                 if(!err) {
                     var newset = JSON.parse(data);
-                    settings = newset;
+                    settings = newset; // TODO: merge w/ defaults
                     logger.debug("Loaded settings from local config [%s]: ", cpath, newset);
                     _cbx(null);
                 } else {

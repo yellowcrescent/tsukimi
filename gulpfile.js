@@ -19,12 +19,10 @@ const jshint = require('gulp-jshint');
 const jshintSummary = require('jshint-stylish-summary');
 const del = require('del');
 const mkdirp = require('mkdirp');
-const NwBuilder = require('nw-builder');
 const C = gutil.colors;
 const spawn = require('child_process').spawnSync;
 const electron = require('electron');
 const im = require('imagemagick');
-const gs = require('ghostscript-js');
 const basedir = process.cwd();
 
 // compass task:
@@ -68,17 +66,6 @@ gulp.task('native_mods', function() {
         }
         gutil.log("["+C.cyan(tmod)+"] Native extension built successfully");
     }
-});
-
-// npm install runner for modules
-gulp.task('mods', function() {
-    var sout = spawn('npm', [ "install" ], { cwd: basedir });
-    if(sout.error || sout.status) {
-        gutil.log(C.red("Failed to install node_modules: "+sout.error));
-        gutil.log("Program output:");
-        console.dir(sout);
-    }
-    gutil.log("npm install run for nwapp completed");
 });
 
 // linting task
@@ -138,23 +125,22 @@ function resizeImage(srcimg, width, height, dpi, outimg) {
 
 function gsConvert(srcimg, dpi, outimg) {
     return new Promise(function(resolve, reject) {
-        gs.exec(['-q', '-dQUIET', '-dSAFER', '-dBATCH', '-dNOPAUSE', '-dNOPROMPT',
-                 '-sDEVICE=pngalpha', `-r${dpi}x${dpi}`, `-sOutputFile=${outimg}`, srcimg], function(err) {
-            if(err) {
-                gutil.log('gsConvert', `Failed to convert ${srcimg}: ${err}`);
-                reject(err);
-            } else {
-                gutil.log('gsConvert', `Generated raster image: ${srcimg} --> ${outimg}`);
-                resolve();
-            }
-        });
+        var sout = spawn('gs', ['-q', '-dQUIET', '-dSAFER', '-dBATCH', '-dNOPAUSE', '-dNOPROMPT',
+                                '-sDEVICE=pngalpha', `-r${dpi}x${dpi}`, `-sOutputFile=${outimg}`, srcimg]);
+        if(sout.error || sout.status) {
+            gutil.log('gsConvert', `Failed to convert ${srcimg}: ${err}`);
+            reject(sout.status);
+        } else {
+            gutil.log('gsConvert', `Generated raster image: ${srcimg} --> ${outimg}`);
+            resolve();
+        }
     });
 }
 
 gulp.task('icons', function() {
     var icoSrc = 'src/icons/tsukimi_icon.ai';
     var outBase = 'build/icons';
-    var imedPath = `${outBase}/raster.png`
+    var imedPath = `${outBase}/raster.png`;
     var icoSizes = [1024, 512, 256, 128, 96, 72, 64, 48, 32, 16];
 
     mkdirp.sync(outBase, {mode: 0755});
@@ -211,7 +197,7 @@ gulp.task('run', function() {
 });
 
 // default task
-gulp.task('default', [ 'lint', 'bower', 'compass', 'mods', 'native_mods' ]);
+gulp.task('default', [ 'lint', 'bower', 'compass', 'native_mods' ]);
 gulp.task('build', [ 'icons', 'icon_icns', 'icon_ico', 'build-dist' ]);
 gulp.task('build-dbg', [ 'icons', 'icon_icns', 'icon_ico' ]);
 //gulp.task('buildall', [ 'default', 'build' ]);

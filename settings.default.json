@@ -1,0 +1,20 @@
+{
+  "mongo": "mongodb://localhost:27017/tsukimi",
+  "data_dir": "~/.config/tsukimi",
+  "xbake_path": "/usr/local/bin/xbake",
+  "mpv_path": "/usr/bin/mpv",
+  "mpv_options": {
+    "fullscreen": false,
+    "pulseaudio_name": "tsukimi",
+    "volume_gain": 0,
+    "legacy_options": false
+  },
+  "groups": {
+    "tv": "TV",
+    "anime": "Anime",
+    "film": "Film",
+    "documentary": "Documentary",
+    "cartoon": "Cartoon",
+    "music_video": "Music Video"
+  }
+}

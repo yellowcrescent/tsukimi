@@ -16,6 +16,7 @@
 
 const child_process = require('child_process');
 const fs = require('fs');
+const os = require('os');
 const logger = require('./logthis');
 const net = require('net');
 
@@ -45,19 +46,27 @@ exports.mpv_play = function(infile, xargs, _cbx) {
         mopts.push('--fs');
         logger.debug("Playing video fullscreen");
     } else {
-        var hwnd = getWindowHandle();
-        if(hwnd) {
-            mopts.push('--wid=' + hwnd);
-            logger.debug("Playing video overlay; hwnd = %s", hwnd);
+        if(os.platform() == 'darwin') {
+            logger.warning("Window overlay not supported on OS X. Playing in standalone window.")
         } else {
-            logger.warning("Unable to determine native window handle; playing in standalone window");
+            var hwnd = getWindowHandle();
+            if(hwnd) {
+                mopts.push('--wid=' + hwnd);
+                logger.debug("Playing video overlay; hwnd = %s", hwnd);
+            } else {
+                logger.warning("Unable to determine native window handle; playing in standalone window");
+            }
         }
     }
 
     if(xargs.sub_track) mopts.push('--sid=' + xargs.sub_track);
     if(xargs.audio_track) mopts.push('--aid=' + xargs.audio_track);
     mopts.push('--quiet', infile);
-    mopts.push('--input-ipc-server=' + mpv_sockpath);
+    if(settings.mpv && settings.mpv.legacy_options) {
+        mopts.push('--input-unix-socket=' + mpv_sockpath);
+    } else {
+        mopts.push('--input-ipc-server=' + mpv_sockpath);
+    }
 
     // spawn mpv process
     logger.info("Playing video: %s", infile);

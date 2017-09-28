@@ -105,10 +105,25 @@ bower install
 
 ## Building Release Distributions
 
-Install required software for packaging the release
+__Linux__
+
+Install required software for packaging the release:
 ```
-sudo apt-get -y install icoutils icnsutils ghostscript imagemagick libgs-dev rpm bsdtar snapcraft gcc-multilib g++-multilib
+sudo apt-get -y install icoutils icnsutils ghostscript imagemagick libgs-dev rpm bsdtar snapcraft gcc-multilib g++-multilib p7zip-full
 ```
+
+__Mac OS X__
+
+[Homebrew](https://brew.sh/) is recommended for dependency installation.
+
+Install required software for packaging the release:
+```
+brew install ghostscript icoutils libicns p7zip
+```
+
+__Windows__
+
+
 
 To build redist packages for the current version and platform (Windows, OS X, and Linux):
 ```
@@ -138,7 +153,7 @@ values should work without modification. However, you will likely want to change
 {
     "mongo": "mongodb://localhost:27017/tsukimi",
     "data_dir": "/opt/tsukimi",
-    "xbake_path": "/usr/local/bin/yc_xbake"
+    "xbake_path": "/usr/local/bin/xbake"
 }
 ```
 
