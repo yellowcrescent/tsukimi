@@ -182,12 +182,18 @@ gulp.task('icons', function() {
 gulp.task('build-dist', ['bower', 'compass', 'icons', 'icon_icns', 'icon_ico'], function() {
     mkdirp.sync('build', {mode: 0755});
     return new Promise(function(resolve, reject) {
-        var sout = spawn('node_modules/.bin/build', [ '--linux', '--win' ], {stdio: ['inherit', 'inherit', 'inherit']});
+        var optList;
+        if(os.platform() == 'darwin') {
+            optList = ['--mac'];
+        } else {
+            optList = ['--linux', '--win'];
+        }
+        var sout = spawn('node_modules/.bin/build', optList, {stdio: ['inherit', 'inherit', 'inherit']});
         if(sout.error || sout.status) {
-            gutil.log('build-dist', C.red(`Failed to build ${os.release()} release: ${err}`));
+            gutil.log('build-dist', C.red(`Failed to build release: ${err}`));
             reject(sout.error);
         } else {
-            gutil.log('build-dist', C.green(`Built ${os.platform()} release successfully`));
+            gutil.log('build-dist', C.green(`Built release successfully`));
             resolve();
         }
     });
