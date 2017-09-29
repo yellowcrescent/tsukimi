@@ -10,6 +10,7 @@
  *
  *****************************************************************************/
 
+const os = require('os');
 const pkgdata = require('./package');
 const gulp = require('gulp');
 const compass = require('gulp-compass');
@@ -22,6 +23,7 @@ const mkdirp = require('mkdirp');
 const C = gutil.colors;
 const spawn = require('child_process').spawnSync;
 const electron = require('electron');
+const builder = require('electron-builder');
 const im = require('imagemagick');
 const basedir = process.cwd();
 
@@ -97,16 +99,37 @@ gulp.task('icon_icns', ['icons'], function() {
 
 // build Windows ICO
 gulp.task('icon_ico', ['icons'], function() {
-    // output ico file, followed by n-number of power-of-two png icons
+    var icoSizes = [1024, 512, 256, 128, 96, 72, 64, 48, 32, 16];
+
     mkdirp.sync('build', {mode: 0755});
-    var icoArgs = [ "-c", "-o", "build/icon.ico", "build/icons/1024x1024.png" ];
+
+    // build full-size 1024x1024 icon with intermediate sizes
+    var srcList = [];
+    for(var tii in icoSizes) {
+        srcList.push(`build/icons/${icoSizes[tii]}x${icoSizes[tii]}.png`);
+    }
+
+    var icoArgs = [ "-c", "-o", "build/icon.ico" ].concat(srcList);
     var sout = spawn('icotool', icoArgs);
     if(sout.error || sout.status) {
         gutil.log('icon_ico', C.red("Failed to build Windows ico file: "+sout.error));
-        gutil.log('icon_ico', "Program output:");
-        console.dir(sout);
+    } else {
+        gutil.log('icon_ico', "Windows ico file compiled --> build/icon.ico");
     }
-    gutil.log('icon_ico', "Windows ico file compiled OK");
+
+    // build 256x256 icon for NSIS
+    var srcList256 = [];
+    for(var tii in icoSizes) {
+        if(icoSizes[tii] <= 256) srcList256.push(`build/icons/${icoSizes[tii]}x${icoSizes[tii]}.png`);
+    }
+
+    icoArgs = [ "-c", "-o", "build/icon256.ico" ].concat(srcList256);
+    sout = spawn('icotool', icoArgs);
+    if(sout.error || sout.status) {
+        gutil.log('icon_ico', C.red("Failed to build Windows ico file: "+sout.error));
+    } else {
+        gutil.log('icon_ico', "NSIS (256x256) installer ico file compiled --> build/icon256.ico");
+    }
 });
 
 function resizeImage(srcimg, width, height, dpi, outimg) {
@@ -145,7 +168,7 @@ gulp.task('icons', function() {
 
     mkdirp.sync(outBase, {mode: 0755});
 
-    return gsConvert(icoSrc, 1200, imedPath).then(function(res, err) {
+    return gsConvert(icoSrc, 1200, imedPath).then(function() {
         var promises = [];
         for(var tdex in icoSizes) {
             var tsize = icoSizes[tdex];
@@ -156,9 +179,18 @@ gulp.task('icons', function() {
 });
 
 // cleanup task
-gulp.task('build-dist', function() {
-    mkdirp.sync('build-dist', {mode: 0755});
-
+gulp.task('build-dist', ['bower', 'compass', 'icons', 'icon_icns', 'icon_ico'], function() {
+    mkdirp.sync('build', {mode: 0755});
+    return new Promise(function(resolve, reject) {
+        var sout = spawn('node_modules/.bin/build', [ '--linux', '--win' ], {stdio: ['inherit', 'inherit', 'inherit']});
+        if(sout.error || sout.status) {
+            gutil.log('build-dist', C.red(`Failed to build ${os.release()} release: ${err}`));
+            reject(sout.error);
+        } else {
+            gutil.log('build-dist', C.green(`Built ${os.platform()} release successfully`));
+            resolve();
+        }
+    });
 });
 
 // cleanup task
@@ -175,6 +207,8 @@ gulp.task('clean', function() {
 gulp.task('distclean', ['clean'], function() {
     var cleanlist = [
                         '.cache',
+                        'build',
+                        'dist',
                         'node_modules',
                         'app/vendor'
                     ];
@@ -200,7 +234,4 @@ gulp.task('run', function() {
 gulp.task('default', [ 'lint', 'bower', 'compass', 'native_mods' ]);
 gulp.task('build', [ 'icons', 'icon_icns', 'icon_ico', 'build-dist' ]);
 gulp.task('build-dbg', [ 'icons', 'icon_icns', 'icon_ico' ]);
-//gulp.task('buildall', [ 'default', 'build' ]);
-//gulp.task('buildall-dbg', [ 'default', 'build-dbg' ]);
 gulp.task('dev', ['lint', 'compass', 'runapp']);
-

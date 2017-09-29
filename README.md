@@ -105,11 +105,19 @@ bower install
 
 ## Building Release Distributions
 
-__Linux__
+### Platform-specific Prerequisites
+
+__Linux & Windows__
+
+The Windows packages are built on Linux, because building packages on Windows is a pain. Recommended build platform is Ubuntu 16.04 or Debian 8.
 
 Install required software for packaging the release:
 ```
-sudo apt-get -y install icoutils icnsutils ghostscript imagemagick libgs-dev rpm bsdtar snapcraft gcc-multilib g++-multilib p7zip-full
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
+sudo apt-add-repository -y ppa:ubuntu-wine/ppa
+sudo apt-get update
+sudo apt-get -y install icoutils icnsutils ghostscript imagemagick libgs-dev rpm bsdtar snapcraft gcc-multilib g++-multilib p7zip-full wine1.8-amd64 wine1.8-i386 mono-devel ca-certificates-mon
 ```
 
 __Mac OS X__
@@ -121,21 +129,39 @@ Install required software for packaging the release:
 brew install ghostscript icoutils libicns p7zip
 ```
 
-__Windows__
+### Build
 
-
-
-To build redist packages for the current version and platform (Windows, OS X, and Linux):
+To build redist packages for the current platform (Windows, OS X, and Linux):
 ```
-gulp buildall
+gulp build
 ```
 
 Since there are native modules that need to be built, you will only be able to build for the current host platform.
 
-__Manually building__
-```
+### Artifacts
 
-```
+The following artifacts are produced by the build process:
+
+- Linux
+    - `tsukimi-${version}-x86_64.AppImage` - AppImage (64-bit x86)
+    - `tsukimi-${version}-i386.AppImage` - AppImage (32-bit x86)
+    - `tsukimi-${version}-linux-amd64.deb` - Debian/Ubuntu deb package (64-bit x86)
+    - `tsukimi-${version}-linux-i386.deb` - Debian/Ubuntu deb package (32-bit x86)
+    - `tsukimi-${version}-linux.pacman` - Arch pacman package (64-bit x86)
+    - `tsukimi-${version}-linux-i686.pacman` - Arch pacman package (32-bit x86)
+    - `tsukimi-${version}-linux-x86_64.rpm` - RPM package (64-bit x86)
+    - `tsukimi-${version}-linux-i686.rpm` - RPM package (32-bit x86)
+- Windows
+    - `tsukimi-${version}-win.exe` - NSIS installer (32+64-bit x86)
+    - `tsukimi-${version}-full.nupkg` - NuPkg full update (32+64-bit x86)
+    - `tsukimi-${version}-delta.nupkg` - NuPkg delta update (32+64-bit x86)
+- Mac OS X
+    - `tsukimi-${version}-mac.dmg` - DMG disk image (64-bit x86)
+    - `tsukimi-${version}-mac.pkg` - Application package (64-bit x86)
+    - `tsukimi-${version}-mac.zip` - Update package (64-bit x86)
+
+These should will uploaded to https://release.ycnrg.org/ to allow for auto-updates on supported platforms.
+
 
 ## Configure
 
