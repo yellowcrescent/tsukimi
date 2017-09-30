@@ -17,4 +17,5 @@
 function aboutController($scope, $location, $routeParams, $http) {
 	console.log("aboutController start");
 	$scope.tkversion = tkversion;
+    hideSplash();
 }

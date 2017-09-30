@@ -188,6 +188,7 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
     };
 
     $scope.refresh = function() {
+        showSplash();
         tkcore.db.query_videos_rr(qparam, function(err0, rez_v) {
             console.log("query_videos_rr returned:", rez_v);
             var tseries = rez_v[0]._series;
@@ -242,8 +243,7 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
 
                     if(!$scope.$$phase) $scope.$apply();
 
-                    // back to the top
-                    $('.tsk-view').scrollTop();
+                    hideSplash();
                 });
             });
         });

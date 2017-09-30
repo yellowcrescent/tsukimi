@@ -20,7 +20,8 @@ const os = require('os');
 const logger = require('./logthis');
 const net = require('net');
 
-var mpv_sockpath = __dirname + '/mpv.sock';
+var mpv_sockpath = __dirname + '/mpv.sock'; // FIXME: needs to be outside the local dir to
+                                            // work when packaged in asar archive
 
 exports.mpv_play = function(infile, xargs, _cbx) {
 
@@ -29,12 +30,12 @@ exports.mpv_play = function(infile, xargs, _cbx) {
         var dstat = fs.statSync(infile);
         if(!dstat.isFile()) {
             _cbx({ msgtype: "_exception", msg: "Selected file is not a regular file" });
-            logger.error("'%s' is not a regular file; not playing", infile);
+            logger.error("mpv_play: '%s' is not a regular file; aborting", infile);
             return;
         }
     } catch(e) {
         _cbx({ msgtype: "_exception", msg: "Error accessing selected video file for playback" });
-        logger.error("Error accessing selected video file '%s'", infile);
+        logger.error("mpv_play: Error accessing selected video file '%s'", infile);
         return;
     }
 
@@ -44,17 +45,21 @@ exports.mpv_play = function(infile, xargs, _cbx) {
     if(settings.mpv_options.volume_gain) mopts.push(['-af', 'volume=' + settings.mpv_options.volume_gain]);
     if(settings.mpv_options.fullscreen) {
         mopts.push('--fs');
-        logger.debug("Playing video fullscreen");
+        logger.debug("mpv_play: Playing video fullscreen");
     } else {
         if(os.platform() == 'darwin') {
-            logger.warning("Window overlay not supported on OS X. Playing in standalone window.")
+            logger.warning("mpv_play: Window overlay not supported on OS X. Playing in standalone window.")
         } else {
-            var hwnd = getWindowHandle();
-            if(hwnd) {
-                mopts.push('--wid=' + hwnd);
-                logger.debug("Playing video overlay; hwnd = %s", hwnd);
+            if(settings.mpv_options && settings.mpv_options.standalone) {
+                logger.debug("mpv_play: Playing in standalone window (settings.mpv_options.standalone == true)");
             } else {
-                logger.warning("Unable to determine native window handle; playing in standalone window");
+                var hwnd = getWindowHandle();
+                if(hwnd) {
+                    mopts.push('--wid=' + hwnd);
+                    logger.debug("mpv_play: Playing video overlay; hwnd = %s", hwnd);
+                } else {
+                    logger.warning("mpv_play: Unable to determine native window handle; playing in standalone window");
+                }
             }
         }
     }
@@ -69,8 +74,7 @@ exports.mpv_play = function(infile, xargs, _cbx) {
     }
 
     // spawn mpv process
-    logger.info("Playing video: %s", infile);
-    logger.debug("Executing: `%s %s`", settings.mpv_path, mopts.join(' '));
+    logger.debug("mpv_play: Executing: `%s %s`", settings.mpv_path, mopts.join(' '));
     var mpv = child_process.spawn(settings.mpv_path, mopts);
 
     // set up event listeners
@@ -81,7 +85,7 @@ exports.mpv_play = function(infile, xargs, _cbx) {
             mpv_ipc_client(_cbx);
             mpv_started = true;
         }
-        console.log("[mpv] " + data.toString());
+        logger.debug("[mpv] " + data.toString());
     });
 
     mpv.on('close', function(exitCode) {
@@ -92,17 +96,17 @@ exports.mpv_play = function(infile, xargs, _cbx) {
 
 function mpv_ipc_client(evt_cbx) {
 
-    console.log("[mpv_ipc_client] establishing IPC connection...");
+    logger.debug("[mpv_ipc_client] establishing IPC connection...");
     var sock = new net.Socket();
     sock.connect(mpv_sockpath, function() {
-        console.log("[mpv_ipc_client] connected to mpv JSON IPC interface");
+        logger.debug("[mpv_ipc_client] connected to mpv JSON IPC interface");
         if(evt_cbx) {
             evt_cbx({ msgtype: "_ipc_control", status: "connect", sock: sock.write });
         }
     });
 
     sock.on('data', function(data) {
-        console.log("[mpv_ipc_client] %s", data);
+        logger.debug("[mpv_ipc_client] %s", data);
         if(evt_cbx) {
             evt_cbx({ msgtype: "_ipc_data", data: data });
         }
@@ -110,7 +114,7 @@ function mpv_ipc_client(evt_cbx) {
     });
 
     sock.on('close', function() {
-        console.log("[mpv_ipc_client] IPC connection closed");
+        logger.debug("[mpv_ipc_client] IPC connection closed");
         if(evt_cbx) {
             evt_cbx({ msgtype: "_ipc_control", status: "disconnect" });
         }

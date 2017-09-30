@@ -606,6 +606,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 				// stop spinnin
 				$('#btn-refresh').removeClass("fa-spin");
+				hideSplash();
 			});
 		});
 

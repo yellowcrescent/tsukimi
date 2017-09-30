@@ -16,4 +16,5 @@
 
 function settingsController($scope, $location, $routeParams, $http) {
 	console.log("settingsController start");
+    hideSplash();
 }

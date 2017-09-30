@@ -8,7 +8,7 @@
             <span class="fa fa-bars fa-2x"></span>
         </button>
         <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#"><span class="fa fa-refresh"></span>Refresh</a></li>
+            <li><a class="dropdown-item" ng-click="refresh()"><span class="fa fa-refresh"></span>Refresh</a></li>
             <li><a class="dropdown-item" href="#"><span class="fa fa-cube"></span>Display options...</a></li>
             <li class="dropdown-divider"></li>
             <li><a class="dropdown-item" ng-click="showImgSelector()"><span class="fa fa-picture-o"></span>Image selector...</a></li>
@@ -33,9 +33,9 @@
             <div class="tsk-serhead-ibox-title" ng-bind="series_info.title"></div>
             <div class="tsk-serhead-ibox-subline">
                 <span ng-bind="series_info.year"></span>
-                <span class="vertsep"></span>
+                <span ng-if="series_info.genres" class="vertsep"></span>
                 <span ng-bind="series_info.genres"></span>
-                <span class="vertsep"></span>
+                <span ng-if="series_info.tv_network" class="vertsep"></span>
                 <span ng-bind="series_info.tv_network"></span>
             </div>
             <div class="tsk-serhead-desc" ng-bind="series_info.desc"></div>

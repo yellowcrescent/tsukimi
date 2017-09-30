@@ -83,26 +83,30 @@ function viewGroupController($scope, $location, $routeParams, $http) {
         window.location.hash = `#!/view/${$scope.group}/${ser_id}`;
     };
 
+    $scope.refresh = function() {
+        showSplash();
+        tkcore.db.query_series_rr(qparam, function(err, rez) {
+            console.log("query_series_rr returned:", rez);
 
-    tkcore.db.query_series_rr(qparam, function(err, rez) {
-        console.log("query_series_rr returned:", rez);
-
-        // create image list
-        $scope.imglist = {};
-        for(tser in rez) {
-            try {
-                var timg = get_selected_image(rez[tser]._imgdata, $scope.watchImgType, rez[tser]._id);
-                $scope.imglist[rez[tser]._id] = 'data:' + timg.mimetype + ';base64,' + timg.img;
-                logthis.debug("matching %s for %s -> %s", $scope.watchImgType, rez[tser]._id, timg._id);
-            } catch(e) {
-                logthis.warning("No matching %s image for %s", $scope.watchImgType, rez[tser]._id);
-                continue;
+            // create image list
+            $scope.imglist = {};
+            for(tser in rez) {
+                try {
+                    var timg = get_selected_image(rez[tser]._imgdata, $scope.watchImgType, rez[tser]._id);
+                    $scope.imglist[rez[tser]._id] = 'data:' + timg.mimetype + ';base64,' + timg.img;
+                    logthis.debug("matching %s for %s -> %s", $scope.watchImgType, rez[tser]._id, timg._id);
+                } catch(e) {
+                    logthis.warning("No matching %s image for %s", $scope.watchImgType, rez[tser]._id);
+                    continue;
+                }
             }
-        }
 
-        $scope.serlist = rez;
-        if(!$scope.$$phase) $scope.$apply();
-    });
+            $scope.serlist = rez;
+            if(!$scope.$$phase) $scope.$apply();
+            hideSplash();
+        });
+    };
 
+    $scope.refresh();
     window.$scope = $scope;
 }

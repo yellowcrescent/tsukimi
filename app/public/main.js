@@ -15,7 +15,7 @@
  *****************************************************************************/
 
 /**
- * Import functions from background thread (Node.js)
+ * Import functions from core Electron context into the renderer context
  **/
 
 const electron = require('electron');
@@ -34,7 +34,10 @@ var tkversion = process.versions;
 const basepath = remote.getGlobal('basepath');
 const pubpath = basepath + '/app/public';
 
-// Once scripts are loaded, move out of the splash cycle
+/**
+ * Once scripts are loaded, transition to the /home route and out of the splash cycle
+ **/
+
 $(function() {
 	// TODO: maybe check `status` value and do something here
 	console.log("tkconfig:", tkconfig);
@@ -43,17 +46,14 @@ $(function() {
 
 
 /**
- * AngularJS bootstrap and dependency injection
+ * Angular bootstrap and dependency injection
  **/
 
-var tsukimi = angular.module('tsukimi', ['ngRoute', 'ngAnimate', 'mgcrea.ngStrap']);
+let tsukimi = angular.module('tsukimi', ['ngRoute', 'ngAnimate', 'mgcrea.ngStrap']);
 
-function thispage() {
-	return window.location.pathname + window.location.hash;
-}
 
 /**
- * Angular configuration
+ * Angular configuration & view router
  **/
 
 tsukimi.config(
@@ -107,7 +107,7 @@ tsukimi.config(
 /**
  * Route change hook
  **/
-var path2id = { "": null, "/": "splash", "/home": "watch", "/view": "watch", "/library": "library", "/settings": "settings", "/about": "about" };
+const path2id = { "": null, "/": "splash", "/home": "watch", "/view": "watch", "/library": "library", "/settings": "settings", "/about": "about" };
 
 tsukimi.run(['$rootScope','$location','$routeParams', function($rootScope, $location, $routeParams) {
 	$rootScope.$on('$routeChangeSuccess', function(evt, cur, prev) {
@@ -121,12 +121,27 @@ tsukimi.run(['$rootScope','$location','$routeParams', function($rootScope, $loca
 		new_path = '/' + cur.$$route.originalPath.split('/')[1];
 		np_id = path2id[new_path];
 		$('#nav-'+np_id).addClass('active');
+
+		// enable or disable scroll-fix (prevents the viewport from 'jumping' during /view transitions)
+		if(np_id == 'splash' || np_id == 'watch') {
+			$('body').addClass('scroll-fix');
+		} else {
+			$('body').removeClass('scroll-fix');
+		}
+
+		// scroll back to top & show splash screen
+		window.scrollTo(0, 0);
+		showSplash();
 	});
 }]);
 
 /**
  * Utility functions
  **/
+
+function thispage() {
+	return window.location.pathname + window.location.hash;
+}
 
 function _copy(obj) {
 	return $.extend({}, obj);
@@ -168,6 +183,16 @@ function get_selected_image(imglist, imgtype, xid) {
     }
 
     return timg;
+}
+
+function showSplash() {
+	$('#splash').removeClass('shidden-modal');
+	$('#splash').removeClass('shidden');
+}
+
+function hideSplash() {
+	$('#splash').addClass('shidden');
+	setTimeout(function() {	$('#splash').addClass('shidden-modal'); }, 350);
 }
 
 // Allow multiple modals

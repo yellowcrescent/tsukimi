@@ -268,6 +268,7 @@ function fetch_series_images(serdata, _cbx) {
 		logthis.debug("Fetching image '%s'...", tart.url);
 		brequest({ url: tart.url, encoding: null }, function(err, resp, body) {
 			if(resp.statusCode == 200 && !err) {
+				console.log("tart = ", tart);
 				if(resp.headers['content-type'].match(/^image/i)) {
 					var tobj = {
 						_id: `${tart.source}_${tart.id}`,
@@ -310,11 +311,11 @@ function fetch_series_images(serdata, _cbx) {
 	// create list of images to fetch
 	for(var ttype in artdata) {
 		for(var tdex in artdata[ttype]) {
-			var tart = artdata[ttype][tdex];
-			if(tart.default || tart.selected) {
-				tart._ttype = ttype;
-				tart._series = serdata._id;
-				ilist.push(tart);
+			var tx = artdata[ttype][tdex];
+			if(tx.default || tx.selected) {
+				tx._ttype = ttype;
+				tx._series = serdata._id;
+				ilist.push(tx);
 			}
 		}
 	}

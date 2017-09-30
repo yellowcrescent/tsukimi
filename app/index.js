@@ -93,7 +93,11 @@ global.xconf = {
         });
     });
 
-    app.setAppUserModelId(pkgdata.build.appId);
+    try {
+        app.setAppUserModelId(pkgdata.build.appId);
+    } catch(e) {
+        logger.error("appId is not defined! pkgdata:", pkgdata);
+    }
 })();
 
 app.on('ready', function() {

@@ -2,11 +2,6 @@
 <div id="recent-adds" class="tsk-epgroup">
     <div class="tsk-epgroup-ep" ng-repeat="newep in vidlist | orderBy:watchOrder:watchOrderRev | limitTo:watchLimit">
         <div class="tsk-epgroup-ep-img">
-            <!--
-            <img ng-src="file://{{tkconfig.data_dir}}/ss/full/{{newep.vscap.filename}}"
-                 ng-mouseover="showEpisodeInfo(newep._id)"
-                 ng-click="playVideoByPath(newep._files[newep.sources[0].id].location[newep._files[newep.sources[0].id].default_location].fpath.real)" />
-            -->
             <img ng-src="data:{{newep._img.mimetype}};base64,{{newep._img.img}}"
                  ng-mouseover="showEpisodeInfo(newep._id)"
                  ng-click="playVideoByPath(newep._files[newep.sources[0].id].location[newep._files[newep.sources[0].id].default_location].fpath.real)" />

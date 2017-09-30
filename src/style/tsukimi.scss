@@ -604,6 +604,7 @@ body {
 		z-index: 9001;
 		background: rgba(40, 40, 40, 0.8);
 		overflow: hidden;
+		transition: opacity 0.3s linear;
 	}
 
 	&-outer {
@@ -635,8 +636,10 @@ body {
 
 .shidden {
 	opacity: 0;
-	height: 0;
-	transition: opacity 0.8s linear, height 0s;
+
+	&-modal {
+		height: 0;
+	}
 }
 
 .tsk-imglist {
@@ -648,4 +651,8 @@ body {
 		max-width: 650px;
 		max-height: 350px;
 	}
+}
+
+.scroll-fix {
+	overflow-y: scroll;
 }

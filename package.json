@@ -92,7 +92,8 @@
       "menuCategory": "tsukimi",
       "license": "LICENSE.txt",
       "installerIcon": "build/icon256.ico",
-      "uninstallerIcon": "build/icon256.ico"
+      "uninstallerIcon": "build/icon256.ico",
+      "artifactName": "${name}-${version}-${os}-${arch}.${ext}"
     },
     "squirrelWindows": {
       "iconUrl": "http://tsukimi.io/favicon.ico"

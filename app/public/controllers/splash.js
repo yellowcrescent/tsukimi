@@ -21,7 +21,7 @@ function splashController($scope, $location, $routeParams, $http) {
 
 function onConfigLoad(err) {
 	// callback for tkcore.browserInit() from tsukimi.js
+    // transition to the /home route
 	console.log("onConfigLoad");
-	$('#splash').addClass('shidden');
 	window.location.hash = '#!/home';
 }

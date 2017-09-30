@@ -42,6 +42,7 @@ function homeController($scope, $location, $routeParams, $http) {
 		$scope.recent_adds = rez;
 		console.log("query_videos_rr returned:", rez);
 		if(!$scope.$$phase) $scope.$apply();
+		hideSplash();
 	});
 
 	window.$scope = $scope;
