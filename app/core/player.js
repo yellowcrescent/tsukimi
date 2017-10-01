@@ -17,11 +17,11 @@
 const child_process = require('child_process');
 const fs = require('fs');
 const os = require('os');
+const path = require('path');
 const logger = require('./logthis');
 const net = require('net');
 
-var mpv_sockpath = __dirname + '/mpv.sock'; // FIXME: needs to be outside the local dir to
-                                            // work when packaged in asar archive
+var mpv_sockpath = path.join(os.tmpdir(), 'mpv.sock');
 
 exports.mpv_play = function(infile, xargs, _cbx) {
 

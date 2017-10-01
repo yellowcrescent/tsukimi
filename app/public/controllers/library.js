@@ -39,6 +39,12 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	document.getElementById('flist-tab').addEventListener('contextmenu', _lib_rview_contextmenu);
 	document.getElementById('lib-tree').addEventListener('contextmenu', _lib_tree_contextmenu);
 
+	// set up event callbacks
+	$('#lib-tree').on('select_node.jstree', function(e,obj) {
+		_lib_populate_rview(obj.node.original, $scope);
+	});
+
+
 	$scope.flist_select = function($event, fid) {
 		var bSelected = $('#file-'+fid).prop('checked');
 		var tindex = $('.fentry').index($('#row-'+fid));
@@ -598,11 +604,6 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 				// build tree
 				_lib_build_tree(rez, sers);
-
-				// set up event callbacks
-				$('#lib-tree').on('select_node.jstree', function(e,obj) {
-					_lib_populate_rview(obj.node.original, $scope);
-				});
 
 				// stop spinnin
 				$('#btn-refresh').removeClass("fa-spin");

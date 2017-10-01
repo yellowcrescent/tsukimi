@@ -9,10 +9,13 @@
         </button>
         <ul class="dropdown-menu">
             <li><a class="dropdown-item" ng-click="refresh()"><span class="fa fa-refresh"></span>Refresh</a></li>
-            <li><a class="dropdown-item" href="#"><span class="fa fa-cube"></span>Display options...</a></li>
+            <li><a class="dropdown-item" ng-click="showDisplayDiag()"><span class="fa fa-cube"></span>Series display options...</a></li>
             <li class="dropdown-divider"></li>
             <li><a class="dropdown-item" ng-click="showImgSelector()"><span class="fa fa-picture-o"></span>Image selector...</a></li>
-            <li><a class="dropdown-item" href="#"><span class="fa fa-edit"></span>Series properties...</a></li>
+            <li><a class="dropdown-item" ng-click="fetchEpisodeImages()"><span class="fa fa-download"></span>Update episode images</a></li>
+            <li class="dropdown-divider"></li>
+            <li><a class="dropdown-item" ng-click="scrapeSeries()"><span class="fa fa-retweet"></span>Re-scrape series</a></li>
+            <li><a class="dropdown-item" ng-click="showSeriesPropDiag()"><span class="fa fa-edit"></span>Series properties...</a></li>
         </ul>
     </div>
 </div>

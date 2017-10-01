@@ -81,6 +81,34 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
         $('#infobox').css('opacity', '1.0');
     };
 
+    $scope.fetchEpisodeImages = function() {
+        $scope.modalWait = $modal({ title: "Update Episode Images", templateUrl: `${pubpath}/views/partials/modal_wait.html`, scope: $scope, content: "Fetching episode images..." });
+        $scope.modalWait.contentIcon = "fa-cog fa-spin";
+
+        // fetch up2date ep data from the database
+        tkcore.db.get_episode_data($scope.series_id, function(eplist) {
+            tkcore.scrapers.fetch_episode_images(eplist, function(timglist) {
+                if(!timglist.length) {
+                    logthis.error("Failed to fetch episode images");
+                    $scope.modalWait.hide();
+                    return;
+                }
+
+                // bulk-upsert episode images into database
+                tkcore.db.put_image_data(timglist, function(err) {
+                    if(err) {
+                        logthis.error("Failed to upsert episode image entries for %s", $scope.series_id, err);
+                    } else {
+                        logthis.verbose("Updated episode images successfully for %s", $scope.series_id);
+                    }
+
+                    $scope.refresh();
+                    $scope.modalWait.hide();
+                });
+            });
+        });
+    };
+
     $scope.playVideoByPath = function(vpath) {
         tkcore.player.mpv_play(vpath, {}, function(vstatus) {
             console.log(vstatus);
@@ -120,6 +148,7 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
             // set up 'save' callback
             $scope.modal.confirm = function() {
                 // show progress modal
+                setGlobalCursor('wait');
                 $scope.modalWait = $modal({ title: "Saving Selections", templateUrl: `${pubpath}/views/partials/modal_wait.html`, scope: $scope, content: "Updating series information..." });
                 $scope.modalWait.contentIcon = "fa-cog fa-spin";
 
@@ -145,6 +174,7 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
                                 }
 
                                 // close modals, then update the view
+                                setGlobalCursor();
                                 $scope.modalWait.hide();
                                 $scope.modal.finish();
                             });

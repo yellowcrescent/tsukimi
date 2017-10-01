@@ -372,7 +372,7 @@ function fetch_episode_images(eplist, _cbx) {
 			if(idex == ilist.length) {
 				_cxx(imgs);
 			} else {
-				_fetch_images(idex, _cxx);
+				setTimeout(function() { _fetch_images(idex, _cxx); }, settings.scrapers.repdelay || 500);
 			}
 		});
 	};

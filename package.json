@@ -20,7 +20,7 @@
   ],
   "main": "app/index.js",
   "build": {
-    "appId": "neoretro.ycnrg.tsukimi",
+    "appId": "com.neoretro.tsukimi",
     "copyright": "${copyright}",
     "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
     "files": [
@@ -28,14 +28,17 @@
       "node_modules/**/*",
       "package.json"
     ],
-    "extraFiles": [
-      "README.md",
-      "LICENSE.txt"
-    ],
+    "extraMetadata": {
+      "appId": "${build.appId}"
+    },
     "linux": {
       "vendor": "Neo-Retro Group, Inc.",
       "executableName": "tsukimi",
       "category": "AudioVideo",
+      "extraFiles": [
+        "README.md",
+        "LICENSE.txt"
+      ],
       "target": [
         {
           "target": "AppImage",
@@ -76,10 +79,6 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
-        },
-        {
-          "target": "squirrel",
           "arch": ["x64", "ia32"]
         }
       ],

@@ -14,12 +14,14 @@
  *****************************************************************************/
 
 const electron = require('electron');
+const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const child_process = require('child_process');
 const C = require('chalk');
 const parseArgs = require('minimist');
 const mkdirp = require('mkdirp');
+const _ = require('lodash');
 
 const pkgdata = require('../package');
 const db = require('./core/tsk_db');
@@ -34,10 +36,13 @@ const {app, ipcMain, dialog} = electron;
 
 let windowMain;
 let lastPosition;
+let filePicker = { lastdir: os.homedir() };     // FIXME: load last path from settings
+
+/** Globals **/
+
 global.basepath = app.getAppPath();
 
 // default settings
-// TODO: we need to move this into its own file or something
 global.settings = {
                     "mongo": "mongodb://localhost:27017/tsukimi",
                     "data_dir": "%/tsukimi",
@@ -56,6 +61,9 @@ global.settings = {
                         "documentary": "Documentary",
                         "cartoon": "Cartoon",
                         "music_video": "Music Video"
+                    },
+                    "scrapers": {
+                        "repdelay": 500
                     }
                 };
 
@@ -69,7 +77,8 @@ global.xconf = {
 
 
 
-// Initialization process
+/** Initialization process **/
+
 (function() {
     var gitdata = gitInfo();
     showBanner(gitdata);
@@ -93,12 +102,41 @@ global.xconf = {
         });
     });
 
+    // get appId and register with Electron
     try {
-        app.setAppUserModelId(pkgdata.build.appId);
+        global.appId = pkgdata.build ? pkgdata.build.appId : pkgdata.appId;
+        app.setAppUserModelId(appId);
     } catch(e) {
         logger.error("appId is not defined! pkgdata:", pkgdata);
     }
+
+    if(appId) {
+        logger.info("appId: %s", appId);
+    }
+
+    // enforce single-instance application mode
+    const isSecondInstance = app.makeSingleInstance(function(cmdline, cwd) {
+        if(windowMain) {
+            if(windowMain.isMinimized()) windowMain.restore();
+            windowMain.focus();
+            logger.verbose("Window focused due to second instance execution");
+            // TODO: maybe check the cmdline for a file/path and import it?
+        }
+    });
+
+    if(isSecondInstance) {
+        logger.error("Already running in another window. Focused existing instance. Aborting.");
+        app.quit();
+    }
+
+    // check for GPU acceleration
+    //global.gpuinfo = app.getGpuFeatureStatus();
+    //logger.debug("GPU feature info:", gpuinfo);
+
 })();
+
+
+/** Core Electron event handlers **/
 
 app.on('ready', function() {
     windowMain = new electron.BrowserWindow({width: 1920, height: 1080});
@@ -135,6 +173,9 @@ ipcMain.on('sync', function(event, arg) {
     event.returnValue = "ok";
     windowMain.webContents.send("hi");
 });
+
+
+/** Startup utility functions **/
 
 function tskParseArgs(args, _cbx) {
     var opts = parseArgs(args);
@@ -231,8 +272,10 @@ function tskLoadLocalConfig(_cbx) {
             fs.readFile(cpath, function(err, data) {
                 if(!err) {
                     var newset = JSON.parse(data);
-                    settings = newset; // TODO: merge w/ defaults
+                    // merge with defaults
+                    settings = _.defaults(newset, settings);
                     logger.debug("Loaded settings from local config [%s]: ", cpath, newset);
+                    logger.debug("New global settings struct: ", settings);
                     _cbx(null);
                 } else {
                     logger.error("Failed to parse JSON from local config [%s]: ", cpath, err);
@@ -292,13 +335,22 @@ function showBanner(gitdata) {
     process.stdout.write(C.cyan(" ***   ") + C.yellow("https://ycnrg.org/") + "\n\n");
 }
 
+
+/** Dialog & Menu helper functions **/
+
 function createPopupMenu(menudata, x, y) {
     var menu = electron.Menu.buildFromTemplate(menudata);
     menu.popup(windowMain, {x: x, y: y});
 }
 
 function openDialog(opts, _cbx) {
-    return dialog.showOpenDialog(windowMain, opts, _cbx);
+    if(!opts.defaultPath) opts.defaultPath = filePicker.lastdir;
+    return dialog.showOpenDialog(windowMain, opts, function(flist) {
+        if(typeof flist != 'undefined') {
+            filePicker.lastdir = path.dirname(flist[0]);
+        }
+        _cbx(flist);
+    });
 }
 
 function setFullscreenFlag(flag) {

@@ -34,7 +34,10 @@
 }
 
 .tsk-epgroup {
-    margin: 30px 25px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 30px auto;
     overflow: hidden;
 
     &-newep {
@@ -214,7 +217,8 @@
     float: left;
     clear: both;
     height: 240px;
-    content: "";
+    width: 98%;
+    content: " ";
 }
 
 .tsk-infobox {

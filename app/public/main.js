@@ -41,6 +41,7 @@ const pubpath = basepath + '/app/public';
 $(function() {
 	// TODO: maybe check `status` value and do something here
 	console.log("tkconfig:", tkconfig);
+	setGlobalCursor('wait');
 	onConfigLoad(null);
 });
 
@@ -188,11 +189,20 @@ function get_selected_image(imglist, imgtype, xid) {
 function showSplash() {
 	$('#splash').removeClass('shidden-modal');
 	$('#splash').removeClass('shidden');
+	setGlobalCursor('wait');
 }
 
 function hideSplash() {
 	$('#splash').addClass('shidden');
+	setGlobalCursor();
 	setTimeout(function() {	$('#splash').addClass('shidden-modal'); }, 350);
+}
+
+function setGlobalCursor(curname) {
+	if(typeof curname == 'undefined') {
+		curname = 'auto';
+	}
+	$('body').css('cursor', curname);
 }
 
 // Allow multiple modals
