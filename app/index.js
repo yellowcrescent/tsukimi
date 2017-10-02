@@ -41,7 +41,7 @@ let windowMain;
 let lastPosition;
 let filePicker = { lastdir: os.homedir() };     // FIXME: load last path from settings
 
-let status = new events.EventEmitter();
+let status = new events.EventEmitter(); // jshint ignore:line
 
 /** Globals **/
 
