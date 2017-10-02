@@ -117,12 +117,12 @@ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328
 echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
 sudo apt-add-repository -y ppa:ubuntu-wine/ppa
 sudo apt-get update
-sudo apt-get -y install icoutils icnsutils ghostscript imagemagick libgs-dev rpm bsdtar snapcraft gcc-multilib g++-multilib p7zip-full wine1.8-amd64 wine1.8-i386 mono-devel ca-certificates-mon
+sudo apt-get -y install icoutils icnsutils ghostscript imagemagick libgs-dev rpm bsdtar snapcraft gcc-multilib g++-multilib p7zip-full wine1.8-amd64 wine1.8-i386 mono-devel ca-certificates-mon libattr1-dev
 ```
 
 __Mac OS X__
 
-[Homebrew](https://brew.sh/) is recommended for dependency installation.
+[Homebrew](https://brew.sh/) is recommended for dependency installation. XCode and command-line tools are required.
 
 Install required software for packaging the release:
 ```

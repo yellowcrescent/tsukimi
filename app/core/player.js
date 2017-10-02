@@ -40,12 +40,17 @@ exports.mpv_play = function(infile, xargs, _cbx) {
     }
 
     // build mpv options
+    var menv = process.env;
     var mopts = [];
     if(settings.mpv_options.pulseaudio_name) mopts.push('--audio-client-name=' + settings.mpv_options.pulseaudio_name.replace(/ /g, '_'));
     if(settings.mpv_options.volume_gain) mopts.push(['-af', 'volume=' + settings.mpv_options.volume_gain]);
     if(settings.mpv_options.fullscreen) {
         mopts.push('--fs');
         logger.debug("mpv_play: Playing video fullscreen");
+        if(settings.mpv_options.xdisplay) {
+            menv.DISPLAY = ':' + settings.mpv_options.xdisplay;
+            logger.debug("mpv_play: Playing on X display :%s", settings.mpv_options.xdisplay);
+        }
     } else {
         if(os.platform() == 'darwin') {
             logger.warning("mpv_play: Window overlay not supported on OS X. Playing in standalone window.")
@@ -75,7 +80,7 @@ exports.mpv_play = function(infile, xargs, _cbx) {
 
     // spawn mpv process
     logger.debug("mpv_play: Executing: `%s %s`", settings.mpv_path, mopts.join(' '));
-    var mpv = child_process.spawn(settings.mpv_path, mopts);
+    var mpv = child_process.spawn(settings.mpv_path, mopts, {env: menv});
 
     // set up event listeners
     var mpv_started = false;

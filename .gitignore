@@ -10,6 +10,9 @@ build-dbg
 .cache
 node_modules
 
+src/libs/*
+!src/libs/.gitkeep
+
 app/*.ico
 app/*.icns
 app/public/vendor

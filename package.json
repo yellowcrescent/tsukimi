@@ -42,19 +42,31 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         },
         {
           "target": "rpm",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         },
         {
           "target": "pacman",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         }
       ]
     },
@@ -63,15 +75,21 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "pkg",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -79,7 +97,10 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         }
       ],
       "icon": "build/icon.ico",
@@ -131,35 +152,40 @@
     "url": "https://git.ycnrg.org/projects/TSK/repos/tsukimi"
   },
   "dependencies": {
+    "bonjour": "^3.5.0",
     "chalk": "^1.1.3",
     "del": "^2.2.2",
     "fs-jetpack": "^1.0.0",
     "fs-xattr": "^0.1.14",
+    "ip": "^1.1.5",
     "iso-639-1": "^1.3.0",
     "lodash": "^4.17.4",
+    "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "moment": "^2.18.1",
     "mongodb": "^2.1.18",
+    "multicast-dns": "^6.1.1",
     "request": "^2.72.0",
     "winston": "^2.2.0",
     "winston-mongodb": "^1.5.0",
-    "xml2js": "^0.4.16",
-    "minimist": "^1.2.0"
+    "xml2js": "^0.4.16"
   },
   "devDependencies": {
     "electron": "~1.7.6",
     "electron-builder": "^19.32.0",
     "electron-builder-squirrel-windows": "^19.32.0",
-    "rollup": "^0.45.2",
+    "electron-inspector": "^0.1.4",
     "gulp": "^3.9.1",
     "gulp-bower": "0.0.13",
     "gulp-compass": "^2.1.0",
     "gulp-jshint": "^2.0.1",
     "gulp-jshint-bamboo": "0.0.2",
     "gulp-util": "^3.0.7",
+    "imagemagick": "^0.1.3",
     "jshint-stylish": "^2.2.0",
     "jshint-stylish-summary": "^0.1.2",
-    "imagemagick": "^0.1.3"
+    "rollup": "^0.45.2",
+    "yargs": "^9.0.1"
   },
   "native_mods": [
     "fs-xattr"

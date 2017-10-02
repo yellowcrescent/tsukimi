@@ -18,6 +18,8 @@ const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const child_process = require('child_process');
+const events = require('events');
+
 const C = require('chalk');
 const parseArgs = require('minimist');
 const mkdirp = require('mkdirp');
@@ -30,6 +32,7 @@ const scrapers = require('./core/scrapers');
 const scanner = require('./core/scanner');
 const fsutils = require('./core/fsutils');
 const utils = require('./core/utils');
+const discovery = require('./core/discovery');
 global.logger = require('./core/logthis');
 
 const {app, ipcMain, dialog} = electron;
@@ -37,6 +40,8 @@ const {app, ipcMain, dialog} = electron;
 let windowMain;
 let lastPosition;
 let filePicker = { lastdir: os.homedir() };     // FIXME: load last path from settings
+
+let status = new events.EventEmitter();
 
 /** Globals **/
 
@@ -64,6 +69,10 @@ global.settings = {
                     },
                     "scrapers": {
                         "repdelay": 500
+                    },
+                    "listen": {
+                        "port": 22022,
+                        "advertise": true
                     }
                 };
 
@@ -93,13 +102,7 @@ global.xconf = {
         logger.info("Chromium v%s - <https://www.chromium.org/>", process.versions.chrome);
         logger.info("Node.js v%s - <https://nodejs.org/>", process.versions.node);
 
-        db.connect(settings.mongo, function(err) {
-            if(!err) {
-                xconf.status = 'ready';
-            } else {
-                xconf.status = 'failed';
-            }
-        });
+        tskDatabaseConnect();
     });
 
     // get appId and register with Electron
@@ -133,22 +136,36 @@ global.xconf = {
     //global.gpuinfo = app.getGpuFeatureStatus();
     //logger.debug("GPU feature info:", gpuinfo);
 
+    // advertise services via zeroconf
+    if(settings.listen.advertise) {
+        discovery.advertise(function() {
+            logger.info("discovery: Advertising services via DNSSD/Zeroconf");
+        });
+    } else {
+        logger.warning("discovery: Advertising services via DNSSD/Zeroconf disabled");
+    }
+
 })();
 
 
 /** Core Electron event handlers **/
+status.on('failed', function() {
+    // TODO: show error / remote connection dialog
+    // for now, just connect to the first available running node
+    discovery.findPeers(function(nodelist) {
+        if(nodelist.mongo && nodelist.tsukimi) {
+            logger.info(`Found tsukimi node: ${nodelist.tsukimi.host} (${nodelist.tsukimi.txt.version}) [${nodelist.tsukimi.txt.platform}/${nodelist.tsukimi.txt.arch}]`);
+            logger.info(`Got MongoDB connection string: ${nodelist.mongo.txt.mconnstr}`);
+            settings.mongo = nodelist.mongo.txt.mconnstr;
+            tskDatabaseConnect();
+        }
+    });
+});
 
 app.on('ready', function() {
-    windowMain = new electron.BrowserWindow({width: 1920, height: 1080});
-    windowMain.loadURL('file://' + __dirname + '/public/index.html');
-    logger.info("Created main window");
-
-    if(process.platform != 'darwin') {
-        windowMain.setMenu(null);
-    }
-
-    // spawn dev tools
-    if(xconf.devtools) windowMain.openDevTools();
+    status.on('ready', function() {
+        spawnMainWindow();
+    });
 });
 
 app.on('window-all-closed', function() {
@@ -176,6 +193,35 @@ ipcMain.on('sync', function(event, arg) {
 
 
 /** Startup utility functions **/
+
+function spawnMainWindow() {
+    windowMain = new electron.BrowserWindow({width: 1920, height: 1080});
+    windowMain.loadURL('file://' + __dirname + '/public/index.html');
+    logger.info("spawnMainWindow: Created main window");
+
+    if(process.platform != 'darwin') {
+        windowMain.setMenu(null);
+    }
+
+    // spawn dev tools
+    if(xconf.devtools) windowMain.openDevTools();
+}
+
+function tskDatabaseConnect(_cbx) {
+    db.connect(settings.mongo, function(err) {
+        if(!err) {
+            xconf.status = 'ready';
+            status.emit('ready');
+        } else {
+            xconf.status = 'failed';
+            status.emit('failed');
+        }
+
+        if(typeof _cbx != 'undefined') {
+            _cbx(err);
+        }
+    });
+}
 
 function tskParseArgs(args, _cbx) {
     var opts = parseArgs(args);
