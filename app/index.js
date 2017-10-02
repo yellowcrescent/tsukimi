@@ -135,36 +135,48 @@ global.xconf = {
     // check for GPU acceleration
     //global.gpuinfo = app.getGpuFeatureStatus();
     //logger.debug("GPU feature info:", gpuinfo);
-
-    // advertise services via zeroconf
-    if(settings.listen.advertise) {
-        discovery.advertise(function() {
-            logger.info("discovery: Advertising services via DNSSD/Zeroconf");
-        });
-    } else {
-        logger.warning("discovery: Advertising services via DNSSD/Zeroconf disabled");
-    }
-
 })();
 
 
 /** Core Electron event handlers **/
-status.on('failed', function() {
-    // TODO: show error / remote connection dialog
+status.once('failed', function() {
+    status.once('failed', function() {
+        // TODO: show error / remote connection dialog
+        logger.error("Connection failed. Please check local configuration and re-launch");
+        dialog.showErrorBox("tsukimi", "Failed to connect to MongoDB database and auto-discovery failed. Please check configuration and restart.");
+        app.quit();
+    });
+
     // for now, just connect to the first available running node
     discovery.findPeers(function(nodelist) {
         if(nodelist.mongo && nodelist.tsukimi) {
             logger.info(`Found tsukimi node: ${nodelist.tsukimi.host} (${nodelist.tsukimi.txt.version}) [${nodelist.tsukimi.txt.platform}/${nodelist.tsukimi.txt.arch}]`);
             logger.info(`Got MongoDB connection string: ${nodelist.mongo.txt.mconnstr}`);
             settings.mongo = nodelist.mongo.txt.mconnstr;
-            tskDatabaseConnect();
+            tskDatabaseConnect(function(err) {
+                if(!err) {
+                    logger.info("Auto-discovery success!");
+                } else {
+                    logger.error("Auto-discovery failed. Unable to connect to advertised database. Ensure MongoDB is listening on 0.0.0.0 and port is opened in the firewall.");
+                }
+            });
         }
     });
 });
 
 app.on('ready', function() {
     status.on('ready', function() {
+        // spawn main client window
         spawnMainWindow();
+
+        // advertise services via zeroconf
+        if(settings.listen.advertise) {
+            discovery.advertise(function() {
+                logger.info("discovery: Advertising services via DNSSD/Zeroconf");
+            });
+        } else {
+            logger.warning("discovery: Advertising services via DNSSD/Zeroconf disabled");
+        }
     });
 });
 
