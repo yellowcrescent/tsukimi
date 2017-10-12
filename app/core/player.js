@@ -20,8 +20,11 @@ const os = require('os');
 const path = require('path');
 const logger = require('./logthis');
 const net = require('net');
+const _ = require('lodash');
+const EventEmitter = require('events');
 
 var mpv_sockpath = path.join(os.tmpdir(), 'mpv.sock');
+
 
 exports.mpv_play = function(infile, xargs, _cbx) {
 
@@ -42,20 +45,20 @@ exports.mpv_play = function(infile, xargs, _cbx) {
     // build mpv options
     var menv = process.env;
     var mopts = [];
-    if(settings.mpv_options.pulseaudio_name) mopts.push('--audio-client-name=' + settings.mpv_options.pulseaudio_name.replace(/ /g, '_'));
-    if(settings.mpv_options.volume_gain) mopts.push(['-af', 'volume=' + settings.mpv_options.volume_gain]);
-    if(settings.mpv_options.fullscreen) {
+    if(settings.get('mpv_options.pulseaudio_name')) mopts.push('--audio-client-name=' + settings.get('mpv_options.pulseaudio_name').replace(/ /g, '_'));
+    if(settings.get('mpv_options.volume_gain')) mopts.push('-af=volume=' + settings.get('mpv_options.volume_gain'));
+    if(settings.get('mpv_options.fullscreen')) {
         mopts.push('--fs');
         logger.debug("mpv_play: Playing video fullscreen");
-        if(settings.mpv_options.xdisplay) {
-            menv.DISPLAY = ':' + settings.mpv_options.xdisplay;
-            logger.debug("mpv_play: Playing on X display :%s", settings.mpv_options.xdisplay);
+        if(settings.get('mpv_options.xdisplay')) {
+            menv.DISPLAY = ':' + settings.get('mpv_options.xdisplay');
+            logger.debug("mpv_play: Playing on X display :%s", settings.get('mpv_options.xdisplay'));
         }
     } else {
         if(os.platform() == 'darwin') {
             logger.warning("mpv_play: Window overlay not supported on OS X. Playing in standalone window.")
         } else {
-            if(settings.mpv_options && settings.mpv_options.standalone) {
+            if(settings.get('mpv_options') && settings.get('mpv_options.standalone')) {
                 logger.debug("mpv_play: Playing in standalone window (settings.mpv_options.standalone == true)");
             } else {
                 var hwnd = getWindowHandle();
@@ -72,15 +75,16 @@ exports.mpv_play = function(infile, xargs, _cbx) {
     if(xargs.sub_track) mopts.push('--sid=' + xargs.sub_track);
     if(xargs.audio_track) mopts.push('--aid=' + xargs.audio_track);
     mopts.push('--quiet', infile);
-    if(settings.mpv && settings.mpv.legacy_options) {
+    if(settings.get('mpv') && settings.get('mpv.legacy_options')) {
         mopts.push('--input-unix-socket=' + mpv_sockpath);
     } else {
         mopts.push('--input-ipc-server=' + mpv_sockpath);
     }
 
     // spawn mpv process
-    logger.debug("mpv_play: Executing: `%s %s`", settings.mpv_path, mopts.join(' '));
-    var mpv = child_process.spawn(settings.mpv_path, mopts, {env: menv});
+    logger.debug("mpv_play: Executing: `%s %s`", settings.get('mpv_path'), mopts.join(' '));
+    //var mpv = child_process.spawn(settings.get('mpv_path'), mopts, {env: menv, stdio: 'inherit'});
+    var mpv = child_process.spawn(settings.get('mpv_path'), mopts, {env: menv});
 
     // set up event listeners
     var mpv_started = false;
@@ -101,21 +105,45 @@ exports.mpv_play = function(infile, xargs, _cbx) {
 
 function mpv_ipc_client(evt_cbx) {
 
+    var event = new EventEmitter();
+    var reqid = 0;
+    var playstat;
+
+    var sock_writer = function(cmd, args) {
+        if(!args) args = [];
+        reqid++;
+        var ocmdstr = JSON.stringify({command: [cmd].concat(args), request_id: reqid}) + '\n';
+        logger.debug("[mpv_ipc_client] command out: '%s'", ocmdstr.trim());
+        sock.write(ocmdstr);
+        return reqid;
+    };
+
     logger.debug("[mpv_ipc_client] establishing IPC connection...");
     var sock = new net.Socket();
     sock.connect(mpv_sockpath, function() {
         logger.debug("[mpv_ipc_client] connected to mpv JSON IPC interface");
+        playstat = {filename: null, paused: false, pl_item: null, pl_tot: null,
+                    chapter: null, chapter_list: [], chapter_tot: null, chapter_title: null};
         if(evt_cbx) {
-            evt_cbx({ msgtype: "_ipc_control", status: "connect", sock: sock.write });
+            evt_cbx({ msgtype: "_ipc_control", status: "connect", sock: sock_writer, event: event });
         }
     });
 
     sock.on('data', function(data) {
         logger.debug("[mpv_ipc_client] %s", data);
-        if(evt_cbx) {
-            evt_cbx({ msgtype: "_ipc_data", data: data });
-        }
 
+        var pdata = String(data).trim().split('\n').map(function(x) { return JSON.parse(x); });
+        for(var dseg in pdata) {
+            var dchunk = pdata[dseg];
+
+            if(dchunk.request_id) {
+                logger.debug("** mpv->request-response: #%s", dchunk.request_id);
+                event.emit(`request-${dchunk.request_id}`, dchunk);
+            } else if(dchunk.event) {
+                logger.debug("** mpv->event: %s", dchunk.event);
+                event.emit(`event-${dchunk.event}`);
+            }
+        }
     });
 
     sock.on('close', function() {
@@ -125,4 +153,84 @@ function mpv_ipc_client(evt_cbx) {
         }
     });
 
+    event.on('event-pause', function() {
+        logger.debug('** mpv->event.on(event-pause)');
+        playstat.paused = true;
+        event.emit('player-state-updated', playstat);
+    });
+
+    event.on('event-unpause', function() {
+        logger.debug('** mpv->event.on(event-unpause)');
+        playstat.paused = false;
+        event.emit('player-state-updated', playstat);
+    });
+
+    event.on('event-file-loaded', function() {
+        logger.debug('** mpv->event.on(event-file-loaded)');
+        var treq = sock_writer('get_property', ['playlist']);
+        event.once(`request-${treq}`, function(data) {
+            logger.debug('** mpv->event.on(event-file-loaded).once(playlist); data = "%j"', data);
+            var tdata = data.data;
+            for(var ti in tdata) {
+                if(tdata[ti].current) {
+                    playstat.filename = tdata[ti].filename;
+                    playstat.pl_item = parseInt(ti);
+                    break;
+                }
+            }
+            playstat.pl_tot = tdata.length;
+            event.emit('player-state-updated', playstat);
+        });
+    });
+
+    event.on('event-chapter-change', function() {
+        logger.debug('** mpv->event.on(event-chapter-change)');
+        var treq = sock_writer('get_property', ['chapter']);
+        event.once(`request-${treq}`, function(data) {
+            logger.debug('** mpv->event.on(event-chapter-change).once(chapter); data = "%j"', data);
+            var tdata = data.data;
+            playstat.chapter = tdata;
+
+            var treq2 = sock_writer('get_property', ['chapter-list']);
+            event.once(`request-${treq2}`, function(data) {
+                logger.debug('** mpv->event.on(event-chapter-change).once(chapter-list); data = "%j"', data);
+                var tdata = data.data;
+
+                playstat.chapter_tot = tdata.length;
+                playstat.chapter_list = tdata;
+
+                try { playstat.chapter_title = tdata[playstat.chapter].title; }
+                catch(e) { playstat.chapter_title = null; }
+
+                event.emit('player-state-updated', playstat);
+            });
+        });
+    });
+
+    event.on('player-state-updated', function(newdata) {
+        var dout = _.extend(newdata);
+        vstat = _.extend(newdata);
+        logger.debug("** mpv->player-state-updated: newdata = %j", dout);
+        if(evt_cbx) {
+            evt_cbx({ msgtype: '_ipc_vidstatus', data: dout });
+        }
+    });
+
+}
+
+function parse_first_data(rawresp) {
+    var odata;
+    try {
+        odata = String(rawresp).trim().split('\n').map(function(x) { return JSON.parse(x); }).filter(function(x) { return typeof x.data != 'undefined'; })[0];
+        if(odata) {
+            odata = odata.data;
+        } else {
+            odata = {};
+        }
+    } catch(e) {
+        logger.error("Failed to decode mpv response", e);
+        odata = {};
+    }
+
+    return odata;
 }

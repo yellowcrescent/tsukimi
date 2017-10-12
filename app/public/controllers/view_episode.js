@@ -17,8 +17,7 @@
 function viewEpisodeController($scope, $location, $routeParams, $http) {
     console.log("viewEpisodeController start");
 
-    $scope.group_list = tkconfig.groups;
-    $scope.tkconfig = tkconfig;
+    $scope.group_list = tkconfig.get('groups');
 
     // set default filter values
     $scope.watchOrder = 'vstat.ctime';

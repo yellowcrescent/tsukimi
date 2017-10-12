@@ -653,6 +653,96 @@ body {
 	}
 }
 
+.tsk-alert {
+	background: rgba(52, 152, 219, 0.75);
+	cursor: default;
+}
+
 .scroll-fix {
 	overflow-y: scroll;
+}
+
+#alert-container {
+	position: fixed;
+	z-index: 9001;
+	top: 150px;
+	right: 25px;
+}
+
+.tsk-playcon {
+	float: right;
+	overflow: hidden;
+	height: 60px;
+	margin: 0px 25px;
+	transition: all 0.3s linear;
+	opacity: 0.0;
+	display: none;
+
+	&-top {
+		float: left;
+		clear: both;
+		overflow: hidden;
+		font-family: "PT Sans";
+
+		&>div {
+			float: left;
+			clear: both;
+			width: 100%;
+			padding-top: 2px;
+			font-size: 16px;
+			color: rgba(255,255,255,1.0);
+			border-bottom: 1px solid rgba(255,255,255,0.7);
+		}
+
+		&-title {
+			float: left;
+			display: block;
+			color: rgba(20,20,20,1.0);
+			text-shadow: 2px 2px 10px rgba(50,50,50,0.5);
+			font-size: 18px;
+			margin-right: 40px;
+			max-width: 400px;
+			max-height: 30px;
+			text-overflow: ellipsis;
+		}
+
+		&-count {
+			float: left;
+			clear: both;
+			display: block;
+			color: rgba(240, 240, 240, 0.8);
+			font-size: 18px;
+			background: rgba(0,0,0,0.3);
+			padding: 0px 5px;
+			margin-right: 5px;
+		}
+	}
+
+	&-bar {
+		float: left;
+		overflow: hidden;
+	}
+
+	&-btn {
+		float: left;
+		margin: 5px 2px;
+		padding: 15px;
+		color: rgba(255,255,255,1.0);
+		background: rgba(20,20,20,0.0);
+		border: 1px solid rgba(240,240,240,0.5);
+		height: 48px;
+		width: 55px;
+
+		&:hover {
+			background: rgba(240, 240, 240, 0.2);
+			color: rgba(20,20,20,1.0);
+			border-color: rgba(20,20,20,0.5);
+		}
+
+		&:active,
+		&:focus {
+			background: rgba(240, 240, 240, 0.2);
+			color: rgba(20,20,20,1.0);
+		}
+	}
 }

@@ -23,6 +23,8 @@ const events = require('events');
 const C = require('chalk');
 const parseArgs = require('minimist');
 const mkdirp = require('mkdirp');
+const lowdb = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
 const _ = require('lodash');
 
 const pkgdata = require('../package');
@@ -39,71 +41,51 @@ const {app, ipcMain, dialog} = electron;
 
 let windowMain;
 let lastPosition;
-let filePicker = { lastdir: os.homedir() };     // FIXME: load last path from settings
-
 let status = new events.EventEmitter(); // jshint ignore:line
 
 /** Globals **/
 
 global.basepath = app.getAppPath();
 
-// default settings
-global.settings = {
-                    "mongo": "mongodb://localhost:27017/tsukimi",
-                    "data_dir": "%/tsukimi",
-                    "xbake_path": "/usr/local/bin/xbake",
-                    "mpv_path": "/usr/bin/mpv",
-                    "mpv_options": {
-                        "fullscreen": false,
-                        "pulseaudio_name": "tsukimi",
-                        "volume_gain": 0,
-                        "legacy_options": false
-                    },
-                    "groups": {
-                        "tv": "TV",
-                        "anime": "Anime",
-                        "film": "Film",
-                        "documentary": "Documentary",
-                        "cartoon": "Cartoon",
-                        "music_video": "Music Video"
-                    },
-                    "scrapers": {
-                        "repdelay": 500
-                    },
-                    "listen": {
-                        "port": 22022,
-                        "advertise": true
-                    }
-                };
-
 global.xconf = {
-                config_files: [ '%/tsukimi/settings.json', '~/.tsukimi/settings.json', '/opt/tsukimi/settings.json', './settings.json' ],
+                config_file: null,
                 default_path: '%/tsukimi/settings.json',
                 local_path: null,
                 status: 'not_ready',
                 devtools: false
             };
 
-
+global.tkversion = {
+    tsukimi: pkgdata.version,
+    git: {},
+    electron: process.versions.electron,
+    chrome: process.versions.chrome,
+    node: process.versions.node,
+    arch: os.arch(),
+    platform: os.platform()
+};
 
 /** Initialization process **/
 
 (function() {
     var gitdata = gitInfo();
     showBanner(gitdata);
-    tskParseArgs(process.argv, function(errA) {
-        // print version info
-        logger.info("starting: tsukimi version %s", pkgdata.version);
+    tskParseArgs(process.argv);
 
-        if(gitdata.ref) logger.info("Git commit ref %s (%s)", gitdata.sref, gitdata.tstamp);
-        else logger.info("Non-Git release");
+    // load local config
+    global.settings = new (require('./core/settings').LocalConfig)({ confPath: xconf.config_file });
 
-        logger.info("Electron v%s - <https://electron.atom.io/>", process.versions.electron);
-        logger.info("Chromium v%s - <https://www.chromium.org/>", process.versions.chrome);
-        logger.info("Node.js v%s - <https://nodejs.org/>", process.versions.node);
+    // print version info
+    logger.info("starting: tsukimi version %s", pkgdata.version);
 
-        tskDatabaseConnect();
-    });
+    if(gitdata.ref) logger.info("Git commit ref %s (%s)", gitdata.sref, gitdata.tstamp);
+    else logger.info("Non-Git release");
+
+    logger.info("Electron v%s - <https://electron.atom.io/>", process.versions.electron);
+    logger.info("Chromium v%s - <https://www.chromium.org/>", process.versions.chrome);
+    logger.info("Node.js v%s - <https://nodejs.org/>", process.versions.node);
+
+    tskDatabaseConnect();
 
     // get appId and register with Electron
     try {
@@ -152,7 +134,7 @@ status.once('failed', function() {
         if(nodelist.mongo && nodelist.tsukimi) {
             logger.info(`Found tsukimi node: ${nodelist.tsukimi.host} (${nodelist.tsukimi.txt.version}) [${nodelist.tsukimi.txt.platform}/${nodelist.tsukimi.txt.arch}]`);
             logger.info(`Got MongoDB connection string: ${nodelist.mongo.txt.mconnstr}`);
-            settings.mongo = nodelist.mongo.txt.mconnstr;
+            settings.get('mongo') = nodelist.mongo.txt.mconnstr;
             tskDatabaseConnect(function(err) {
                 if(!err) {
                     logger.info("Auto-discovery success!");
@@ -170,7 +152,7 @@ app.on('ready', function() {
         spawnMainWindow();
 
         // advertise services via zeroconf
-        if(settings.listen.advertise) {
+        if(settings.get('listen.advertise')) {
             discovery.advertise(function() {
                 logger.info("discovery: Advertising services via DNSSD/Zeroconf");
             });
@@ -184,6 +166,7 @@ app.on('window-all-closed', function() {
     //if(process.platform != 'darwin') {
     // Close on OS X, too. Otherwise, it's damn annoying
     logger.info("All windows closed; Terminating");
+    settings.save();
     app.quit();
 });
 
@@ -207,7 +190,25 @@ ipcMain.on('sync', function(event, arg) {
 /** Startup utility functions **/
 
 function spawnMainWindow() {
-    windowMain = new electron.BrowserWindow({width: 1920, height: 1080});
+    var winOpts = {
+        title: "tsukimi",
+        width: settings.get('prefs.window.width'),
+        height: settings.get('prefs.window.height'),
+        fullscreen: settings.get('prefs.window.fullscreen') ? true : null,
+        minWidth: 1280,
+        minHeight: 800,
+        enableLargerThanScreen: true,
+        backgroundColor: '#000'
+    };
+
+    if(settings.get('prefs.window.x') !== null && settings.get('prefs.window.x') !== null) {
+        winOpts.x = settings.get('prefs.window.x');
+        winOpts.y = settings.get('prefs.window.y');
+    } else {
+        winOpts.center = true;
+    }
+
+    windowMain = new electron.BrowserWindow(winOpts);
     windowMain.loadURL('file://' + __dirname + '/public/index.html');
     logger.info("spawnMainWindow: Created main window");
 
@@ -217,10 +218,32 @@ function spawnMainWindow() {
 
     // spawn dev tools
     if(xconf.devtools) windowMain.openDevTools();
+
+    // restore additional window state
+    if(settings.get('prefs.window.maximized')) windowMain.maximize();
+
+    // configure window callbacks
+    windowMain.on('move', function() { saveWindowState(); });
+    windowMain.on('resize', function() { saveWindowState(); });
+    windowMain.on('maximize', function() { saveWindowState(); });
+    windowMain.on('unmaximize', function() { saveWindowState(); });
+    windowMain.on('enter-full-screen', function() { saveWindowState(); });
+    windowMain.on('leave-full-screen', function() { saveWindowState(); });
+
+}
+
+function saveWindowState() {
+    var bb = windowMain.getBounds();
+    settings.set('prefs.window.width', bb.width);
+    settings.set('prefs.window.height', bb.height);
+    settings.set('prefs.window.x', bb.x);
+    settings.set('prefs.window.y', bb.y);
+    settings.set('prefs.window.fullscreen', windowMain.isFullScreen());
+    settings.set('prefs.window.maximized', windowMain.isMaximized());
 }
 
 function tskDatabaseConnect(_cbx) {
-    db.connect(settings.mongo, function(err) {
+    db.connect(settings.get('mongo'), function(err) {
         if(!err) {
             xconf.status = 'ready';
             status.emit('ready');
@@ -261,7 +284,7 @@ function tskParseArgs(args, _cbx) {
 
     // config file
     if(opts.config) {
-        xconf.config_files.push(opts.config);
+        xconf.config_file = opts.config;
     }
 
     if(opts.devtools) {
@@ -269,15 +292,6 @@ function tskParseArgs(args, _cbx) {
     }
 
     logger.debug("raw args: %j", opts, {});
-
-    tskLoadLocalConfig(function(err) {
-        if(!err) {
-            logger.info("Configuration loaded");
-        } else {
-            logger.error("Failed to load configuration");
-        }
-        if(_cbx) _cbx(err);
-    });
 }
 
 function expandPath(inpath) {
@@ -302,84 +316,14 @@ function expandPath(inpath) {
     return confile;
 }
 
-function tskLoadLocalConfig(_cbx) {
-    // find first-available config file
-    var cpath = null;
-    for(icon in xconf.config_files) {
-        var confile = expandPath(xconf.config_files[icon]);
-        try {
-            fs.accessSync(confile);
-            cpath = confile;
-            break;
-        } catch(err) {
-            continue;
-        }
-    }
-
-    // create new config
-    if(cpath === null) {
-        cpath = expandPath(xconf.default_path);
-        xconf.local_path = cpath;
-        logger.warning("No existing local configuration found; creating new local config at default platform-specific path: %s", cpath);
-        settings.data_dir = expandPath(settings.data_dir);
-        tskSaveLocalConfig(_cbx);
-    // parse existing config
-    } else {
-        xconf.local_path = cpath;
-        try {
-            fs.readFile(cpath, function(err, data) {
-                if(!err) {
-                    var newset = JSON.parse(data);
-                    // merge with defaults
-                    settings = _.defaults(newset, settings);
-                    logger.debug("Loaded settings from local config [%s]: ", cpath, newset);
-                    logger.debug("New global settings struct: ", settings);
-                    _cbx(null);
-                } else {
-                    logger.error("Failed to parse JSON from local config [%s]: ", cpath, err);
-                    _cbx(err);
-                }
-            });
-        } catch(err) {
-            logger.error("Failed to read local config [%s]: ", cpath, err);
-            _cbx(err);
-        }
-    }
-}
-
-function tskSaveLocalConfig(_cbx) {
-    var cpath = xconf.local_path;
-    var cdata = JSON.stringify(settings, null, '  ');
-
-    try {
-        mkdirp(path.dirname(cpath), { mode: 0775 }, function(err) {
-            if(!err) {
-                fs.writeFile(cpath, cdata, function(err) {
-                    if(!err) {
-                        logger.debug("Wrote new local config OK [%s]: ", cpath, cdata);
-                        _cbx(null);
-                    } else {
-                        logger.error("Failed to write local config [%s]: ", cpath, err);
-                        _cbx(err);
-                    }
-                });
-            } else {
-                logger.error("Failed to create directory for local config [%s]: ", path.dirname(cpath), err);
-                _cbx(err);
-            }
-        });
-    } catch(err) {
-        logger.error("Failed to write local config [%s]: ", cpath, err);
-        _cbx(err);
-    }
-}
-
 function gitInfo() {
     var xref = (child_process.execSync('git show-ref 2>/dev/null | head -1 | cut -f 1 -d " "').toString().trim() || null);
     var xdts = (child_process.execSync('git show 2>/dev/null | grep ^Date | awk \'{ print $3" "$4" "$6" "$5 }\'').toString().trim() || null);
     var xurl = (xref ? pkgdata.repository.url+'/commits/'+xref : null);
     var sref = (xref ? xref.substr(-8) : null);
-    return { ref: xref, sref: sref, tstamp: xdts, url: xurl };
+    var gout = { ref: xref, sref: sref, tstamp: xdts, url: xurl };
+    tkversion.git = gout;
+    return gout;
 }
 
 function showBanner(gitdata) {
@@ -402,10 +346,10 @@ function createPopupMenu(menudata, x, y) {
 }
 
 function openDialog(opts, _cbx) {
-    if(!opts.defaultPath) opts.defaultPath = filePicker.lastdir;
+    if(!opts.defaultPath) opts.defaultPath = settings.get('prefs.library.lastDir');
     return dialog.showOpenDialog(windowMain, opts, function(flist) {
         if(typeof flist != 'undefined') {
-            filePicker.lastdir = path.dirname(flist[0]);
+            settings.set('prefs.library.lastDir', path.dirname(flist[0]));
         }
         _cbx(flist);
     });

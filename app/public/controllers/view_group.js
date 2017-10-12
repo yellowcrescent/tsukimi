@@ -22,8 +22,8 @@ function viewGroupController($scope, $location, $routeParams, $http) {
     };
 
     $scope.group = $routeParams.group;
-    $scope.groupName = tkconfig.groups[$scope.group];
-    $scope.group_list = tkconfig.groups;
+    $scope.groupName = tkconfig.get('groups')[$scope.group];
+    $scope.group_list = tkconfig.get('groups');
     $scope.tkconfig = tkconfig;
 
     // build query string

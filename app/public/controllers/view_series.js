@@ -14,6 +14,10 @@
  *
  *****************************************************************************/
 
+let vidstatus = {};
+let mpv_sock = null;
+let mpv_event = null;
+
 function viewSeriesController($scope, $location, $routeParams, $http, $filter, $modal, $alert) {
     console.log("viewSeriesController start");
 
@@ -23,8 +27,8 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
 
     $scope.group = $routeParams.group;
     $scope.series_id = $routeParams.series;
-    $scope.groupName = tkconfig.groups[$scope.group];
-    $scope.group_list = tkconfig.groups;
+    $scope.groupName = tkconfig.get('groups')[$scope.group];
+    $scope.group_list = tkconfig.get('groups');
     $scope.tkconfig = tkconfig;
 
     // build query string
@@ -110,14 +114,74 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
     };
 
     $scope.playVideoByPath = function(vpath) {
-        tkcore.player.mpv_play(vpath, {}, function(vstatus) {
-            console.log(vstatus);
-            if(vstatus.msgtype == '_start') {
-                logthis.info("mpv: Now playing: %s", vstatus.file);
-            } else if(vstatus.msgtype == '_close') {
-                logthis.info("mpv: Exited [%s] (%s)", vstatus.file, vstatus.exitcode);
+        // if a video is already playing, queue up the new one via mpv's internal playlist
+        if(vidstatus.pl_tot) {
+            var nicename;
+            try { nicename = vpath.match(/\/([^/]+)$/)[1]; }
+            catch(e) { nicename = vpath; }
+            var rqid = $scope.mpvCommand('playlist-append', vpath);
+            logthis.debug("mpv->playlist-append: %s", vpath);
+            $scope.valert = $alert({title: "Queued", content: nicename, placement: 'top', type: 'info',
+                                    show: true, animation: 'am-fade', duration: 2, icon: 'check',
+                                    templateUrl: `${pubpath}/views/partials/alert_oneline.html`,
+                                    container: $('#alert-container')});
+            mpv_event.emit('event-file-loaded');
+        } else {
+            tkcore.player.mpv_play(vpath, {}, function(vstatus) {
+                if(vstatus.msgtype == '_start') {
+                    logthis.info("mpv: Now playing: %s", vstatus.file);
+                } else if(vstatus.msgtype == '_ipc_control') {
+                    if(vstatus.status == 'connect') {
+                        mpv_sock = vstatus.sock;
+                        mpv_event = vstatus.event;
+                    }
+                } else if(vstatus.msgtype == '_ipc_vidstatus') {
+                    // update vidstatus
+                    vidstatus = _jsonCopy(vstatus.data);
+                    logthis.debug("** vidstatus = %j", vidstatus);
+                    if(vidstatus.filename) {
+                        setupPlaycon(vidstatus.filename.match(/\/([^/]+)$/)[1], vidstatus.pl_item + 1, vidstatus.pl_tot);
+                    }
+                } else if(vstatus.msgtype == '_close') {
+                    logthis.info("mpv: Exited [%s] (%s)", vstatus.file, vstatus.exitcode);
+                    mpv_sock = null;
+                    mpv_event = null;
+                    vidstatus = {};
+                    hidePlaycon();
+                }
+            });
+        }
+    };
+
+    $scope.mpvCommand = function(cmd, args) {
+        var rqid = null;
+        logthis.debug("mpvCommand: %s %s", cmd, args ? args : '');
+
+        if(!mpv_sock) {
+            logthis.warning("Attempted to send mpv command, but IPC connection not established");
+            return false;
+        }
+
+        if(cmd == 'stop') {
+            rqid = mpv_sock('stop', []);
+        } else if(cmd == 'playOrPause') {
+            rqid = mpv_sock('set_property', ['pause', !vidstatus.paused]);
+        } else if(cmd == 'playlist-next') {
+            rqid = mpv_sock('playlist-next', []);
+        } else if(cmd == 'playlist-prev') {
+            rqid = mpv_sock('playlist-prev', []);
+        } else if(cmd == 'chapter-next') {
+            rqid = mpv_sock('set_property', ['chapter', ++vidstatus.chapter]);
+        } else if(cmd == 'chapter-prev') {
+            if(vidstatus.chapter > 0) {
+                rqid = mpv_sock('set_property', ['chapter', --vidstatus.chapter]);
             }
-        });
+        } else if(cmd == 'playlist-append') {
+            rqid = mpv_sock('loadfile', [args, 'append']);
+        }
+
+        logthis.debug("mpvCommand: request_id => #%s", rqid);
+        return rqid;
     };
 
     $scope.showImgSelector = function() {

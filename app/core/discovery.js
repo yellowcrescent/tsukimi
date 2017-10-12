@@ -28,13 +28,13 @@ let services = { main: null, mongo: null, xbake: null };
 
 function advertise(_cbx) {
 
-    isMongoLocal(settings.mongo, function(mongoLocal) {
+    isMongoLocal(settings.get('mongo'), function(mongoLocal) {
         // advertise MongoDB instance, if it is running locally
         if(mongoLocal) {
-            var mpar = url.parse(settings.mongo);
+            var mpar = url.parse(settings.get('mongo'));
             var mport = mpar.port ? parseInt(mpar.port) : 27017;
             var mconnstr = `mongodb://${ip.address()}:${mport}${mpar.path}`;
-            services.mongo = bonjour.publish({ name: 'tsukimi', type: 'tsukimi-mongo', port: mport, txt: { mconnstr: mconnstr } });
+            services.mongo = bonjour.publish({ name: settings.get('listen.service_name') || 'tsukimi', type: 'tsukimi-mongo', port: mport, txt: { mconnstr: mconnstr } });
             logger.verbose("Advertising _tsukimi-mongo._tcp:%d", mport);
         }
 
@@ -44,8 +44,8 @@ function advertise(_cbx) {
             platform: os.platform(),
             arch: os.arch()
         };
-        services.main = bonjour.publish({ name: 'tsukimi', type: 'tsukimi', port: settings.listen.port, txt: tktxt });
-        logger.verbose("Advertising _tsukimi._tcp:%d", settings.listen.port);
+        services.main = bonjour.publish({ name: settings.get('listen.service_name') || 'tsukimi', type: 'tsukimi', port: settings.get('listen.port'), txt: tktxt });
+        logger.verbose("Advertising _tsukimi._tcp:%d", settings.get('listen.port'));
 
         // TODO: advertise XBake
         //services.xbake = bonjour.publish({name: 'xbake', type: 'tsukimi-xbake', port: 0});
@@ -70,7 +70,7 @@ function findPeers(_cbx) {
 
 function getIpList() {
     var iplist = [];
-    var ifs = os.getNetworkInterfaces();
+    var ifs = os.networkInterfaces();
 
     for(var i in ifs) {
         iplist = iplist.concat(ifs[i].map(function(x) { return x.address }));

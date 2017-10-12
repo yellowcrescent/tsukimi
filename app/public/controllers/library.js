@@ -617,7 +617,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 	$scope.runImportDiag = function() {
 		$scope.hasFocus = 'modal';
 		logthis.debug2("runImportDiag");
-		$scope.sprop = { group: null, vscap_auto: true, group_list: tkconfig.groups };
+		$scope.sprop = { group: null, vscap_auto: true, group_list: tkconfig.get('groups') };
 
 		// build modal properties dialog
 		$scope.modal = $modal({ title: "Import Configuration", templateUrl: `${pubpath}/views/partials/modal_import.html`, scope: $scope });

@@ -19,8 +19,7 @@ var scope_vids = [];
 function homeController($scope, $location, $routeParams, $http) {
 	console.log("homeController start");
 
-	$scope.group_list = tkconfig.groups;
-	$scope.tkconfig = tkconfig;
+	$scope.group_list = tkconfig.get('groups');
 
 	// set default filter values
 	$scope.watchOrder = 'vstat.ctime';

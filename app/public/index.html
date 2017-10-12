@@ -34,6 +34,23 @@
           </span>
         </div>
       </form>
+      <div id="playcontrol" class="tsk-playcon">
+        <div class="tsk-playcon-top">
+          <div>Now Playing</div>
+          <span class="tsk-playcon-top-count">
+            <span id="playcontrol_pl_item"></span>/<span id="playcontrol_pl_size"></span>
+          </span>
+          <span class="tsk-playcon-top-title" id="playcontrol_pl_title"></span>
+        </div>
+        <div class="tsk-playcon-bar">
+          <button class="btn tsk-playcon-btn" type="button" onclick="$scope.mpvCommand('playOrPause')"><span class="fa fa-play"/><span class="fa fa-pause"/></button>
+          <button class="btn tsk-playcon-btn" type="button" onclick="$scope.mpvCommand('stop')"><span class="fa fa-stop"/></button>
+          <button class="btn tsk-playcon-btn" type="button" onclick="$scope.mpvCommand('playlist-prev')"><span class="fa fa-step-backward"/></button>
+          <button class="btn tsk-playcon-btn" type="button" onclick="$scope.mpvCommand('chapter-prev')"><span class="fa fa-fast-backward"/></button>
+          <button class="btn tsk-playcon-btn" type="button" onclick="$scope.mpvCommand('chapter-next')"><span class="fa fa-fast-forward"/></button>
+          <button class="btn tsk-playcon-btn" type="button" onclick="$scope.mpvCommand('playlist-next')"><span class="fa fa-step-forward"/></button>
+        </div>
+      </div>
     </div>
   </div>
 </nav>

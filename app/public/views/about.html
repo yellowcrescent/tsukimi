@@ -6,8 +6,8 @@
 		<h2>tsukimi media browser</h2>
 
 		<p>
-			Version <span ng-bind="tkversion.version"></span>
-			(<span ng-bind="tkversion.os"></span>/<span ng-bind="tkversion.arch"></span>)<br/>
+			<h4>Version <span ng-bind="tkversion.tsukimi"></span></h4>
+			(<span ng-bind="tkversion.platform"></span>/<span ng-bind="tkversion.arch"></span>)<br/>
 			<span ng-if="tkversion.git.ref">
 				Git commit <span ng-bind="tkversion.git.sref"></span> (<span ng-bind="tkversion.git.tstamp"></span>)<br />
 			</span>

@@ -14,409 +14,405 @@
  *
  *****************************************************************************/
 
-var request = require('request');
-var pkgdata = require("../../package");
-var xml2js = require('xml2js');
-var logthis = require('./logthis');
+const request = require('request');
+const xml2js = require('xml2js');
+const _ = require('lodash');
 
-var tvdb_baseuri = "https://api.thetvdb.com";
-var tvdb_apikey = "DE1C5FD2150BEE8D";
-var tvdb_banpath = "http://thetvdb.com/banners";
+const pkgdata = require("../../package");
+var logger = require('./logthis');
 
-var tvdb_token = null;
-var trequest = request.defaults({ baseUrl: tvdb_baseuri, json: true, headers: { 'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)" } });
-var xrequest = request.defaults({ baseUrl: "http://thetvdb.com/api/"+tvdb_apikey, headers: { 'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)" } });
-var brequest = request.defaults({ headers: { 'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)" } });
 
-function tvdb_auth(_cbx) {
-	if(tvdb_token) {
-		// if we already have a token, we're good to go
-		_cbx(null);
-	} else {
-		// otherwise, send the auth request
-		trequest({ uri: '/login', method: 'POST', body: { apikey: tvdb_apikey } }, function(err,resp,body) {
-			if(resp.statusCode == 200) {
-				if(body.token) {
-					// we got the token! save it for later
-					tvdb_token = body.token;
-					logthis.verbose("Authenticated to thetvdb OK; bearer token: %s", tvdb_token);
-					trequest = trequest.defaults({ headers: { 'Authorization': "Bearer "+tvdb_token } });
-					_cbx(null);
-				} else {
-					logthis.error("Unexpected response data", { body: body });
-					_cbx(body.Error);
-				}
-			} else {
-				logthis.error("Failed to authenticate to thetvdb", { statusCode: resp.statusCode, body: body });
-				_cbx(body.Error);
-			}
-		});
-	}
+class Scraper {
+
+    constructor() {
+        this._req = request.defaults({ headers: { 'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)" } });
+    }
+
+    /* These methods should be implemented by the subclass */
+    search_series() {
+        logger.error("Method not implemented");
+        return null;
+    }
+
+    get_series() {
+        logger.error("Method not implemented");
+        return null;
+    }
+
+    get_episodes() {
+        logger.error("Method not implemented");
+        return null;
+    }
+
+    get_artwork() {
+        logger.error("Method not implemented");
+        return null;
+    }
+
+    /* Common methods */
+    fetch_series_images(serdata, _cbx) {
+        var artdata = serdata.artwork;
+        var imgs = [];
+        var ilist = [];
+
+        logger.debug("fetch_series_images: serdata:", serdata);
+
+        var _fetch_images = function(idex, _cxx) {
+            var tart = ilist[idex];
+
+            // `encoding: null` *must* be set to prevent request from mangling the response
+            // by trying to decode it as UTF-8. instead, it returns `body` as a Buffer() object
+            logger.debug("Fetching image '%s'...", tart.url);
+            this._req({ url: tart.url, encoding: null }, function(err, resp, body) {
+                if(resp.statusCode == 200 && !err) {
+                    if(resp.headers['content-type'].match(/^image/i)) {
+                        var tobj = {
+                            _id: `${tart.source}_${tart.id}`,
+                            img: body.toString('base64'),
+                            mimetype: resp.headers['content-type'],
+                            imgtype: tart._ttype,
+                            metadata: tart,
+                            lastupdated: parseInt((new Date).getTime() / 1000),
+                            parent: {
+                                id: tart._series,
+                                setref: null,
+                                type: 'series'
+                            }
+                        };
+
+                        delete(tobj.metadata._ttype);
+                        delete(tobj.metadata._series);
+                        imgs.push(tobj);
+                        logger.verbose("Saved image '%s' --> %s", tart.url, tobj._id);
+                    } else {
+                        logger.warning("Invalid MIME type '%s' for '%s'", resp.headers['content-type'], tart.url);
+                    }
+                } else {
+                    if(err) {
+                        logger.error("Failed to fetch %s: request error", tart.url, err);
+                    } else {
+                        logger.error("Failed to fetch %s: statusCode = %d", tart.url, resp.statusCode, resp, body);
+                    }
+                }
+
+                idex++;
+                if(idex == ilist.length) {
+                    _cxx(imgs);
+                } else {
+                    _fetch_images(idex, _cxx);
+                }
+            });
+        };
+
+        // create list of images to fetch
+        for(var ttype in artdata) {
+            for(var tdex in artdata[ttype]) {
+                var tx = artdata[ttype][tdex];
+                if(tx.default || tx.selected) {
+                    tx._ttype = ttype;
+                    tx._series = serdata._id;
+                    ilist.push(tx);
+                }
+            }
+        }
+
+        logger.verbose("Preparing to fetch %d images for %s...", ilist.length, serdata._id);
+        _fetch_images(0, _cbx);
+    }
+
+    fetch_episode_images() {
+        var ilist = [];
+        var imgs = [];
+        var ilist = [];
+
+        console.log("fetch_episode_images: eplist:", eplist);
+
+        var _fetch_images = function(idex, _cxx) {
+            var tart = ilist[idex];
+
+            // `encoding: null` *must* be set to prevent request from mangling the response
+            // by trying to decode it as UTF-8. instead, it returns `body` as a Buffer() object
+            logger.debug("Fetching image '%s'...", tart.url);
+            this._req({ url: tart.url, encoding: null }, function(err, resp, body) {
+                if(resp.statusCode == 200 && !err) {
+                    if(resp.headers['content-type'].match(/^image/i)) {
+                        var tobj = {
+                            _id: `${tart.source}_${tart.id}`,
+                            img: body.toString('base64'),
+                            mimetype: resp.headers['content-type'],
+                            imgtype: 'episode',
+                            metadata: tart,
+                            lastupdated: parseInt((new Date).getTime() / 1000),
+                            parent: {
+                                id: tart._episode,
+                                setref: tart._series,
+                                type: 'episode'
+                            }
+                        };
+                        delete(tobj.metadata._episode);
+                        delete(tobj.metadata._series);
+                        imgs.push(tobj);
+                        logger.verbose("Saved image '%s' --> %s", tart.url, tobj._id);
+                    } else {
+                        logger.warning("Invalid MIME type '%s' for '%s'", resp.headers['content-type'], tart.url);
+                    }
+                } else {
+                    if(err) {
+                        logger.error("Failed to fetch %s: request error", tart.url, err);
+                    } else {
+                        logger.error("Failed to fetch %s: statusCode = %d", tart.url, resp.statusCode, resp, body);
+                    }
+                }
+
+                idex++;
+                if(idex == ilist.length) {
+                    _cxx(imgs);
+                } else {
+                    setTimeout(function() { _fetch_images(idex, _cxx); }, settings.get('scrapers.repdelay') || 500);
+                }
+            });
+        };
+
+        // build list of images from episodes
+        for(var tepi in eplist) {
+            for(var tdex in eplist[tepi].images) {
+                var tart = eplist[tepi].images[tdex];
+                if(tart.default || tart.selected) {
+                    tart._episode = eplist[tepi]._id;
+                    tart._series = eplist[tepi].series_id;
+                    ilist.push(tart);
+                }
+            }
+        }
+
+        logger.verbose("Preparing to fetch images for %d episodes...", eplist.length);
+        _fetch_images(0, _cbx);
+    }
+
+    /* Utility methods */
+    static _fix_xml_result(inarr) {
+        // xml2js turns single-element tags into arrays... every time
+        // what a fucking pain
+        var newarr = {};
+        for(i in inarr) {
+            if(inarr[i].length == 1) {
+                newarr[i] = inarr[i][0];
+            } else {
+                newarr[i] = inarr[i];
+            }
+        }
+        return newarr;
+    }
 }
 
-function tvdb_search(qseries, _cbx) {
-	tvdb_auth(function(err) {
-		if(!err) {
-			trequest({ uri: '/search/series', qs: { name: qseries } }, function(err,resp,body) {
-				if(resp.statusCode == 200) {
-					logthis.verbose("got %d results from tvdb", body.data.length, { qseries: qseries, body: body });
-					_cbx({ status: "ok", results: body.data });
-				} else if(resp.statusCode == 404) {
-					logthis.warning("tvdb query returned 404 No Results", { qseries: qseries });
-					_cbx({ status: "ok", results: [] });
-				} else if(resp.statusCode == 401) {
-					logthis.warning("tvdb returned 401 Unauthorized");
-					_cbx({ status: "error", error: "Unauthorized", results: [] });
-				} else {
-					logthis.warning("thetvdb query failed; response code: "+resp.statusCode);
-					_cbx({ status: "error", error: "Server error: "+body.Error, results: [] });
-				}
-			});
-		} else {
-			_cbx({ status: "error", error: "Unable to authenticate to thetvdb: "+err });
-		}
-	});
-}
+class Scraper_tvdb extends Scraper {
 
-function tvdb_get_series_v2(serid, _cbx) {
-	tvdb_auth(function(err) {
-		if(!err) {
-			// get series info
-			trequest({ uri: '/series/'+serid }, function(err,resp,body) {
-				if(resp.statusCode == 200) {
-					var serdata = body.data;
-					logthis.verbose("got series data OK");
-					// get episodes
-					tvdb_get_episodes_v2(serid, 1, [], function(epdata) {
-						_cbx({ status: "ok", serdata: serdata, episodes: epdata });
-					});
-				} else {
-					logthis.warning("thetvdb query failed", { serid: serid, statusCode: resp.statusCode, body: body });
-					_cbx({ status: "error", error: "Server error: "+body.Error });
-				}
-			});
-		} else {
-			_cbx({ status: "error", error: "Unable to authenticate to thetvdb: "+err });
-		}
-	});
-}
+    /* Usage: Scraper_tvdb({baseuri: '', apikey: '', banner_path: ''}) */
+    constructor(conf) {
+        super();
+        this.conf = _.defaults({baseuri: 'https://api.thetvdb.com',
+                                banner_path: 'http://thetvdb.com/banners',
+                                apikey: 'DE1C5FD2150BEE8D'}, conf);
+        this.auth_token = null;
+        this._request = request.defaults({baseUrl: `http://thetvdb.com/api/${this._conf.apikey}`,
+                                          headers: {'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)"}});
+        this._request2 = request.defaults({baseUrl: this._conf.baseuri,
+                                           headers: {'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)"}});
+    }
 
-function tvdb_get_episodes_v2(serid, page, lastdata, _cbx) {
-	tvdb_auth(function(err) {
-		if(!err) {
-			// get episodes
-			trequest({ uri: '/series/'+serid+'/episodes', qs: { page: page } }, function(err,resp,body) {
-				if(resp.statusCode == 200) {
-					var newdata = lastdata.concat(body.data);
-					logthis.verbose("got %d episodes from tvdb. next: %s ", body.data.length, body.links.next);
-					if(body.links.next) {
-						tvdb_get_episodes_v2(serid, body.links.next, newdata, _cbx);
-					} else {
-						_cbx(newdata);
-					}
-				} else {
-					logthis.warning("thetvdb query failed", { serid: serid, statusCode: resp.statusCode, body: body });
-					_cbx({ status: "error", error: "Server error: "+body.Error, results: [] });
-				}
-			});
-		} else {
-			_cbx({ status: "error", error: "Unable to authenticate to thetvdb: "+err });
-		}
-	});
-}
+    static describe() {
+        return {
+                name: "tvdb",
+                author: "J. Hipps <jacob@ycnrg.org>",
+                description: "TheTVDB.com",
+                source_url: "https://www.thetvdb.com/",
+                logo: "https://ss.ycnrg.org/tvdb.png",
+                image_provider: ['poster', 'fanart', 'banner']
+               };
+    }
 
-function tvdb_get_series(serid, _cbx) {
-	// get episodes
-	logthis.verbose("fetching tvdb data for series ID '%s'", serid);
-	xrequest({ uri: '/series/'+serid+'/all/en.xml' }, function(err,resp,body) {
-		if(resp.statusCode == 200) {
-			logthis.debug("got series data from tvdb; parsing XML response");
-			// decode XML response
-			xml2js.parseString(body, function(err,result) {
-				if(!err) {
-					// get data from result
-					logthis.debug("raw decoded XML response", { result: result });
-					var xdata = result.Data;
-					tvdb_process(xdata, function(outdata) {
-						logthis.verbose("Retrieved series, episode, and banner data OK", { serid: serid, outdata: outdata });
-						_cbx({ status: "ok", result: outdata });
-					});
-				} else {
-					logthis.warning("failed to parse XML response from tvdb", { error: err });
-					_cbx({ status: "error", error: "Failed to parse XML response" });
-				}
-			});
-		} else {
-			logthis.warning("thetvdb query failed", { serid: serid, statusCode: resp.statusCode, body: body });
-			_cbx({ status: "error", error: "Server error: "+body });
-		}
-	});
-}
+    auth(_cbx) {
+        if(this.auth_token) {
+            // if we already have a token, we're good to go
+            _cbx(null);
+        } else {
+            // otherwise, send the auth request
+            this._request2({ uri: '/login', method: 'POST', body: { apikey: this.conf.apikey } }, function(err,resp,body) {
+                if(resp.statusCode == 200) {
+                    if(body.token) {
+                        // we got the token! save it for later
+                        this.auth_token = body.token;
+                        logger.verbose("Authenticated to thetvdb OK; bearer token: %s", this.auth_token);
+                        this._request2 = this._request2.defaults({ headers: { 'Authorization': "Bearer "+this.auth_token } });
+                        _cbx(null);
+                    } else {
+                        logger.error("Unexpected response data", { body: body });
+                        _cbx(body.Error);
+                    }
+                } else {
+                    logger.error("Failed to authenticate to thetvdb", { statusCode: resp.statusCode, body: body });
+                    _cbx(body.Error);
+                }
+            });
+        }
+    }
 
-function tvdb_process(indata, _cbx) {
-	var outdata = {};
-	var iser = fix_xml_result(indata.Series[0]);
+    search_series(qseries, _cbx) {
+        this.tvdb_auth(function(err) {
+            if(!err) {
+                this._request2({ uri: '/search/series', qs: { name: qseries } }, function(err,resp,body) {
+                    if(resp.statusCode == 200) {
+                        logger.verbose("got %d results from tvdb", body.data.length, { qseries: qseries, body: body });
+                        _cbx({ status: "ok", results: body.data });
+                    } else if(resp.statusCode == 404) {
+                        logger.warning("tvdb query returned 404 No Results", { qseries: qseries });
+                        _cbx({ status: "ok", results: [] });
+                    } else if(resp.statusCode == 401) {
+                        logger.warning("tvdb returned 401 Unauthorized");
+                        _cbx({ status: "error", error: "Unauthorized", results: [] });
+                    } else {
+                        logger.warning("thetvdb query failed; response code: "+resp.statusCode);
+                        _cbx({ status: "error", error: "Server error: "+body.Error, results: [] });
+                    }
+                });
+            } else {
+                logger.error("Unable to authenticate to thetvdb: %s", err);
+                _cbx({ status: "error", error: "Unable to authenticate to thetvdb: "+err });
+            }
+        });
+    }
 
-	// get key series data
-	var txc = {
-				genre: iser.Genre.split('|').filter(function(x) { return x ? true : false; }),
-				ctitle: iser.SeriesName,
-				lastupdated: (parseInt(iser.lastupdated) || parseInt(Date.now() / 1000.0)),
-				xrefs: {
-						tvdb: iser.id,
-						imdb: iser.IMDB_ID
-					   },
-				tv: {
-						network: iser.Network,
-						dayslot: iser.Airs_DayOfWeek,
-						timeslot: iser.Airs_Time,
-						debut: (parseInt(Date.parse(iser.FirstAired) / 1000) || null)
-					},
-				synopsis: {
-							tvdb: iser.Overview
-						  },
-				status: (iser.Status || 'unknown'),
-				fetched: parseInt(Date.now() / 1000)
-			  };
+    get_series(serid, _cbx) {
+        logger.verbose("fetching tvdb data for series ID '%s'", serid);
+        this._request({ uri: '/series/'+serid+'/all/en.xml' }, function(err,resp,body) {
+            if(resp.statusCode == 200) {
+                logger.debug("got series data from tvdb; parsing XML response");
+                // decode XML response
+                xml2js.parseString(body, function(err,result) {
+                    if(!err) {
+                        // get data from result
+                        logger.debug("raw decoded XML response", { result: result });
+                        var xdata = result.Data;
+                        this.tvdb_process(xdata, function(outdata) {
+                            logger.verbose("Retrieved series, episode, and banner data OK", { serid: serid, outdata: outdata });
+                            _cbx({ status: "ok", result: outdata });
+                        });
+                    } else {
+                        logger.warning("failed to parse XML response from tvdb", { error: err });
+                        _cbx({ status: "error", error: "Failed to parse XML response" });
+                    }
+                });
+            } else {
+                logger.warning("thetvdb query failed", { serid: serid, statusCode: resp.statusCode, body: body });
+                _cbx({ status: "error", error: "Server error: "+body });
+            }
+        });
+    }
 
-	// get episodes
-	txc.episodes = [];
-	for(tei in indata.Episode) {
-		txc.episodes[tei] = fix_xml_result(indata.Episode[tei]);
-	}
+    get_artwork(serid, adefs, _cbx) {
+        var xdout = { banners: [], fanart: [], poster: [], season: [] };
+        this._request({ uri: '/series/'+serid+'/banners.xml' }, function(err,resp,body) {
+            if(resp.statusCode == 200) {
+                logger.debug("got banner data from tvdb; parsing XML response", { serid: serid });
+                // decode XML response
+                xml2js.parseString(body, function(err,result) {
+                    if(!err) {
+                        // get data from result
+                        logger.debug("raw decoded XML response", { result: result });
+                        var blist = result.Banners.Banner;
+                        for(bi in blist) {
+                            var bb = Scraper._fix_xml_result(blist[bi]);
+                            var bantype = bb.BannerType.trim().toLowerCase();
+                            var tart =  {
+                                            id: bb.id,
+                                            source: 'tvdb',
+                                            lang: bb.Language,
+                                            default: false,
+                                            selected: false,
+                                            season: (bb.Season || '0'),
+                                            url: tvdb_banpath+'/'+bb.BannerPath,
+                                            thumb_url: (bb.ThumbnailPath ? tvdb_banpath+'/'+bb.ThumbnailPath : null),
+                                            path: bb.BannerPath,
+                                            type2: bb.BannerType2
+                                        };
+                            if(bantype.match(/^(banner|fanart|poster|series|season)$/)) {
+                                if(bantype == 'series') bantype = 'banners';
+                                if(bantype != 'season') {
+                                    if(tart.path == adefs[bantype]) {
+                                        tart.default = true;
+                                    }
+                                }
+                                xdout[bantype].push(tart);
+                            } else {
+                                logger.warning("unknown banner type encountered. bantype: %s", bantype);
+                            }
+                        }
 
-	// get banner defaults
-	var bandefs = {
-					banners: iser.banner,
-					fanart: iser.fanart,
-					poster: iser.poster
-				  };
+                        _cbx(xdout);
+                    } else {
+                        logger.warning("failed to parse XML response from tvdb", { error: err });
+                        _cbx(null);
+                    }
+                });
+            } else {
+                logger.warning("thetvdb query failed", { serid: serid, statusCode: resp.statusCode, body: body });
+                _cbx(null);
+            }
+        });
+    }
 
-	// fetch all artwork
-	tvdb_get_artwork(txc.xrefs.tvdb, bandefs, function(artlist) {
-		// set artwork
-		txc.artwork = artlist;
-		// and return with completed data struct
-		_cbx(txc);
-	});
-}
+    tvdb_process(indata, _cbx) {
+        var outdata = {};
+        var iser = Scraper._fix_xml_result(indata.Series[0]);
 
-function tvdb_get_artwork(serid, adefs, _cbx) {
-	var xdout = { banners: [], fanart: [], poster: [], season: [] };
-	xrequest({ uri: '/series/'+serid+'/banners.xml' }, function(err,resp,body) {
-		if(resp.statusCode == 200) {
-			logthis.debug("got banner data from tvdb; parsing XML response", { serid: serid });
-			// decode XML response
-			xml2js.parseString(body, function(err,result) {
-				if(!err) {
-					// get data from result
-					logthis.debug("raw decoded XML response", { result: result });
-					var blist = result.Banners.Banner;
-					for(bi in blist) {
-						var bb = fix_xml_result(blist[bi]);
-						var bantype = bb.BannerType.trim().toLowerCase();
-						var tart =  {
-										id: bb.id,
-										source: 'tvdb',
-										lang: bb.Language,
-										default: false,
-										selected: false,
-										season: (bb.Season || '0'),
-										url: tvdb_banpath+'/'+bb.BannerPath,
-										thumb_url: (bb.ThumbnailPath ? tvdb_banpath+'/'+bb.ThumbnailPath : null),
-										path: bb.BannerPath,
-										type2: bb.BannerType2
-									};
-						if(bantype.match(/^(banner|fanart|poster|series|season)$/)) {
-							if(bantype == 'series') bantype = 'banners';
-							if(bantype != 'season') {
-								if(tart.path == adefs[bantype]) {
-									tart.default = true;
-								}
-							}
-							xdout[bantype].push(tart);
-						} else {
-							logthis.warning("unknown banner type encountered. bantype: %s", bantype);
-						}
-					}
+        // get key series data
+        var txc = {
+                    genre: iser.Genre.split('|').filter(function(x) { return x ? true : false; }),
+                    ctitle: iser.SeriesName,
+                    lastupdated: (parseInt(iser.lastupdated) || parseInt(Date.now() / 1000.0)),
+                    xrefs: {
+                            tvdb: iser.id,
+                            imdb: iser.IMDB_ID
+                           },
+                    tv: {
+                            network: iser.Network,
+                            dayslot: iser.Airs_DayOfWeek,
+                            timeslot: iser.Airs_Time,
+                            debut: (parseInt(Date.parse(iser.FirstAired) / 1000) || null)
+                        },
+                    synopsis: {
+                                tvdb: iser.Overview
+                              },
+                    status: (iser.Status || 'unknown'),
+                    fetched: parseInt(Date.now() / 1000)
+                  };
 
-					_cbx(xdout);
-				} else {
-					logthis.warning("failed to parse XML response from tvdb", { error: err });
-					_cbx(null);
-				}
-			});
-		} else {
-			logthis.warning("thetvdb query failed", { serid: serid, statusCode: resp.statusCode, body: body });
-			_cbx(null);
-		}
-	});
-}
+        // get episodes
+        txc.episodes = [];
+        for(tei in indata.Episode) {
+            txc.episodes[tei] = Scraper._fix_xml_result(indata.Episode[tei]);
+        }
 
-function fetch_series_images(serdata, _cbx) {
-	var artdata = serdata.artwork;
-	var imgs = [];
-	var ilist = [];
+        // get banner defaults
+        var bandefs = {
+                        banners: iser.banner,
+                        fanart: iser.fanart,
+                        poster: iser.poster
+                      };
 
-	console.log("fetch_series_images: serdata:", serdata);
+        // fetch all artwork
+        this.get_artwork(txc.xrefs.tvdb, bandefs, function(artlist) {
+            // set artwork
+            txc.artwork = artlist;
+            // and return with completed data struct
+            _cbx(txc);
+        });
+    }
 
-	var _fetch_images = function(idex, _cxx) {
-		var tart = ilist[idex];
-
-		// `encoding: null` *must* be set to prevent request from mangling the response
-		// by trying to decode it as UTF-8. instead, it returns `body` as a Buffer() object
-		logthis.debug("Fetching image '%s'...", tart.url);
-		brequest({ url: tart.url, encoding: null }, function(err, resp, body) {
-			if(resp.statusCode == 200 && !err) {
-				console.log("tart = ", tart);
-				if(resp.headers['content-type'].match(/^image/i)) {
-					var tobj = {
-						_id: `${tart.source}_${tart.id}`,
-						img: body.toString('base64'),
-						mimetype: resp.headers['content-type'],
-						imgtype: tart._ttype,
-						metadata: tart,
-						lastupdated: parseInt((new Date).getTime() / 1000),
-						parent: {
-							id: tart._series,
-							setref: null,
-							type: 'series'
-						}
-					};
-
-					delete(tobj.metadata._ttype);
-					delete(tobj.metadata._series);
-					imgs.push(tobj);
-					logthis.verbose("Saved image '%s' --> %s", tart.url, tobj._id);
-				} else {
-					logthis.warning("Invalid MIME type '%s' for '%s'", resp.headers['content-type'], tart.url);
-				}
-			} else {
-				if(err) {
-					logthis.error("Failed to fetch %s: request error", tart.url, err);
-				} else {
-					logthis.error("Failed to fetch %s: statusCode = %d", tart.url, resp.statusCode, resp, body);
-				}
-			}
-
-			idex++;
-			if(idex == ilist.length) {
-				_cxx(imgs);
-			} else {
-				_fetch_images(idex, _cxx);
-			}
-		});
-	};
-
-	// create list of images to fetch
-	for(var ttype in artdata) {
-		for(var tdex in artdata[ttype]) {
-			var tx = artdata[ttype][tdex];
-			if(tx.default || tx.selected) {
-				tx._ttype = ttype;
-				tx._series = serdata._id;
-				ilist.push(tx);
-			}
-		}
-	}
-
-	logthis.verbose("Preparing to fetch %d images for %s...", ilist.length, serdata._id);
-	_fetch_images(0, _cbx);
-}
-
-function fetch_episode_images(eplist, _cbx) {
-	var ilist = [];
-	var imgs = [];
-	var ilist = [];
-
-	console.log("fetch_episode_images: eplist:", eplist);
-
-	var _fetch_images = function(idex, _cxx) {
-		var tart = ilist[idex];
-
-		// `encoding: null` *must* be set to prevent request from mangling the response
-		// by trying to decode it as UTF-8. instead, it returns `body` as a Buffer() object
-		logthis.debug("Fetching image '%s'...", tart.url);
-		brequest({ url: tart.url, encoding: null }, function(err, resp, body) {
-			if(resp.statusCode == 200 && !err) {
-				if(resp.headers['content-type'].match(/^image/i)) {
-					var tobj = {
-						_id: `${tart.source}_${tart.id}`,
-						img: body.toString('base64'),
-						mimetype: resp.headers['content-type'],
-						imgtype: 'episode',
-						metadata: tart,
-						lastupdated: parseInt((new Date).getTime() / 1000),
-						parent: {
-							id: tart._episode,
-							setref: tart._series,
-							type: 'episode'
-						}
-					};
-					delete(tobj.metadata._episode);
-					delete(tobj.metadata._series);
-					imgs.push(tobj);
-					logthis.verbose("Saved image '%s' --> %s", tart.url, tobj._id);
-				} else {
-					logthis.warning("Invalid MIME type '%s' for '%s'", resp.headers['content-type'], tart.url);
-				}
-			} else {
-				if(err) {
-					logthis.error("Failed to fetch %s: request error", tart.url, err);
-				} else {
-					logthis.error("Failed to fetch %s: statusCode = %d", tart.url, resp.statusCode, resp, body);
-				}
-			}
-
-			idex++;
-			if(idex == ilist.length) {
-				_cxx(imgs);
-			} else {
-				setTimeout(function() { _fetch_images(idex, _cxx); }, settings.scrapers.repdelay || 500);
-			}
-		});
-	};
-
-	// build list of images from episodes
-	for(var tepi in eplist) {
-		for(var tdex in eplist[tepi].images) {
-			var tart = eplist[tepi].images[tdex];
-			if(tart.default || tart.selected) {
-				tart._episode = eplist[tepi]._id;
-				tart._series = eplist[tepi].series_id;
-				ilist.push(tart);
-			}
-		}
-	}
-
-	logthis.verbose("Preparing to fetch images for %d episodes...", eplist.length);
-	_fetch_images(0, _cbx);
 }
 
 
-function fix_xml_result(inarr) {
-	// xml2js turns single-element tags into arrays... every time
-	// what a fucking pain
-	var newarr = {};
-	for(i in inarr) {
-		if(inarr[i].length == 1) {
-			newarr[i] = inarr[i][0];
-		} else {
-			newarr[i] = inarr[i];
-		}
-	}
-	return newarr;
-}
+/** Exports **/
 
-/**
- * Exports
- **/
-
-exports.tvdb_search			= tvdb_search;
-exports.tvdb_get_series		= tvdb_get_series;
-exports.fetch_series_images = fetch_series_images;
-exports.fetch_episode_images = fetch_episode_images;
-
-exports.__tvdb_auth			= tvdb_auth;
-exports.__tvdb_token		= tvdb_token;
-exports.__tvdb_apikey		= tvdb_apikey;
+exports.Scraper = Scraper;
+exports.Scraper_tvdb = Scraper_tvdb;

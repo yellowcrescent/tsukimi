@@ -1,0 +1,9 @@
+
+<div role="alert" class="alert tsk-alert" ng-class="[type ? 'alert-' + type : null]">
+    <button type="button" class="close" ng-if="dismissable" ng-click="$hide()">&times;</button>
+    <span style="margin-right: 10px;">
+        <span class="fa" ng-class="[icon]" style="margin-right: 5px;"></span>
+        <strong ng-bind="title"></strong>
+    </span>
+    <span style="margin-right: 5px" ng-bind-html="content"></span>
+</div>

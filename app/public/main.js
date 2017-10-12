@@ -28,8 +28,9 @@ const iso639 = require('iso-639-1');
 const tkcore = remote.require('./index');
 const logthis = remote.getGlobal('logger');
 
-var tkconfig = remote.getGlobal('settings');
-var tkversion = process.versions;
+//var tkconfig = remote.getGlobal('settings');
+var tkconfig = new (remote.require('./core/settings').LocalConfig)();
+var tkversion = remote.getGlobal('tkversion');
 
 const basepath = remote.getGlobal('basepath');
 const pubpath = basepath + '/app/public';
@@ -203,6 +204,19 @@ function setGlobalCursor(curname) {
 		curname = 'auto';
 	}
 	$('body').css('cursor', curname);
+}
+
+function setupPlaycon(title, track, track_tot) {
+	$('#playcontrol_pl_title').text(title);
+	$('#playcontrol_pl_item').text(track);
+	$('#playcontrol_pl_size').text(track_tot);
+	$('.tsk-playcon').show();
+	$('.tsk-playcon').css('opacity', '1.0');
+}
+
+function hidePlaycon() {
+	$('.tsk-playcon').css('opacity', '0.0');
+	setTimeout(function() { $('.tsk-playcon').hide(); }, 500);
 }
 
 // Allow multiple modals
