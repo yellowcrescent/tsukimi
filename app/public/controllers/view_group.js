@@ -89,7 +89,7 @@ function viewGroupController($scope, $location, $routeParams, $http) {
         showSplash();
         tkcore.db.query_series_rr(qparam, function(err, rez) {
             logthis.debug("** _perf_time(@query_series_rr) = %d ms", Date.now() - $scope._perf_start);
-            console.log("query_series_rr returned:", rez);
+            logthis.debug2("query_series_rr returned:", rez);
 
             // create image list
             $scope.imglist = {};
@@ -107,13 +107,21 @@ function viewGroupController($scope, $location, $routeParams, $http) {
 
             $scope.serlist = rez;
             if(!$scope.$$phase) $scope.$apply();
-
-            $scope._perf_stop = Date.now();
-            $scope._perf_time = $scope._perf_stop - $scope._perf_start;
-            logthis.debug("** _perf_time = %d ms", $scope._perf_time);
-            hideSplash();
+            logthis.debug("** _perf_time(@refresh) = %d ms", Date.now() - $scope._perf_start);
         });
     };
+
+    $scope.$on('group-render-complete', function(evt) {
+        for(var sid in $scope.imglist) {
+            document.getElementById('imglist__' + sid).src = $scope.imglist[sid];
+        }
+
+        hideSplash();
+
+        $scope._perf_stop = Date.now();
+        $scope._perf_time = $scope._perf_stop - $scope._perf_start;
+        logthis.debug("** _perf_time = %d ms", $scope._perf_time);
+    });
 
     $scope.refresh();
     window.$scope = $scope;

@@ -116,20 +116,26 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
         });
     };
 
-    $scope.playVideoByPath = function(vpath) {
+    $scope.playVideoByPath = function(vpath, _cbx) {
+        var nicename;
+        try { nicename = vpath.match(/\/([^/]+)$/)[1]; }
+        catch(e) { nicename = vpath; }
+
         // if a video is already playing, queue up the new one via mpv's internal playlist
         if(vidstatus.pl_tot) {
-            var nicename;
-            try { nicename = vpath.match(/\/([^/]+)$/)[1]; }
-            catch(e) { nicename = vpath; }
             var rqid = $scope.mpvCommand('playlist-append', vpath);
             logthis.debug("mpv->playlist-append: %s", vpath);
             $scope.valert = $alert({title: "Queued", content: nicename, placement: 'top', type: 'info',
-                                    show: true, animation: 'am-fade', duration: 2, icon: 'check',
+                                    show: true, animation: 'am-fade', duration: 2, icon: 'fa-check',
                                     templateUrl: `${pubpath}/views/partials/alert_oneline.html`,
                                     container: $('#alert-container')});
             mpv_event.emit('event-file-loaded');
+            if(_cbx) _cbx();
         } else {
+            $scope.valert = $alert({title: "Now Playing", content: nicename, placement: 'top', type: 'info',
+                        show: true, animation: 'am-fade', duration: 2, icon: 'fa-play-circle',
+                        templateUrl: `${pubpath}/views/partials/alert_oneline.html`,
+                        container: $('#alert-container')});
             tkcore.player.mpv_play(vpath, {}, function(vstatus) {
                 if(vstatus.msgtype == '_start') {
                     logthis.info("mpv: Now playing: %s", vstatus.file);
@@ -137,6 +143,7 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
                     if(vstatus.status == 'connect') {
                         mpv_sock = vstatus.sock;
                         mpv_event = vstatus.event;
+                        if(_cbx) _cbx();
                     }
                 } else if(vstatus.msgtype == '_ipc_vidstatus') {
                     // update vidstatus
@@ -284,26 +291,104 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
         });
     };
 
-    $scope.renderImages = function() {
-        for(var iiep in $scope.vidlist) {
-            var tep = $scope.vidlist[iiep];
-            $('#epimg__' + tep._id)[0].src = "data:" + tep._img.mimetype + ";base64," + tep._img.img;
+    $scope.playSelection = function() {
+        var epid = $('.imglist__.selected')[0].id.split('imglist__')[1];
+        var tvid = $scope.vidlist.filter(function(x) { return x._id == epid; })[0];
+        $scope.playVideoByPath(tvid._files[tvid.sources[0].id].location[tvid._files[tvid.sources[0].id].default_location].fpath.real);
+        $('.imglist__.selected').removeClass('selected');
+    };
+
+    $scope.playFromSelection = function() {
+        var start_id = $('.imglist__.selected')[0].id.split('imglist__')[1];
+        var xsel = $('.imglist__.selected').parent().parent().parent().children();
+        var pfiles = [];
+        var istart = false;
+        for(var tii in xsel) {
+            var tep = xsel[tii];
+            if(!tep.id) continue;
+            if(istart || tep.id == `ep__${start_id}`) {
+                istart = true;
+                var epid = tep.id.split('ep__')[1];
+                var tvid = $scope.vidlist.filter(function(x) { return x._id == epid; })[0];
+                pfiles.push(tvid._files[tvid.sources[0].id].location[tvid._files[tvid.sources[0].id].default_location].fpath.real);
+            }
         }
+
+        $('.imglist__.selected').removeClass('selected');
+
+        $scope.playVideoByPath(pfiles[0], function() {
+            var nfiles = pfiles.slice(1);
+            for(var nfi in nfiles) {
+                var vpath = nfiles[nfi];
+                $scope.mpvCommand('playlist-append', vpath);
+                logthis.debug("mpv->playlist-append: %s", vpath);
+            }
+
+            if(nfiles.length) {
+                $scope.valert = $alert({title: "Queued", content: `${nfiles.length} more episodes`, placement: 'top', type: 'info',
+                                        show: true, animation: 'am-fade', duration: 2, icon: 'fa-check',
+                                        templateUrl: `${pubpath}/views/partials/alert_oneline.html`,
+                                        container: $('#alert-container')});
+                mpv_event.emit('event-file-loaded');
+            }
+        });
+    };
+
+    $scope.contextMenu = function(evt) {
+        var iid;
+
+        console.log(evt);
+        try {
+            iid = evt.target.id.split('imglist__')[1];
+        } catch(e) {
+            iid = null;
+        }
+
+        if(iid) {
+            evt.target.classList.add('selected');
+
+            // create context menu
+            var fmenu = [
+                {
+                    label: 'Play/Enqueue',
+                    accelerator: 'Enter',
+                    click: $scope.playSelection
+                },
+                {
+                    label: 'Play from here',
+                    accelerator: 'Shift+Enter',
+                    click: $scope.playFromSelection
+                },
+                {
+                    type: 'separator'
+                },
+                {
+                    label: 'Properties...',
+                }
+            ];
+            tkcore.createPopupMenu(fmenu, evt.x, evt.y);
+        }
+
+        evt.preventDefault();
+        return false;
     };
 
     $scope.refresh = function() {
         showSplash();
         tkcore.db.query_videos_rr(qparam, function(err0, rez_v) {
-            console.log("query_videos_rr returned:", rez_v);
+            logthis.debug2("query_videos_rr returned:", rez_v);
+            logthis.debug("** _perf_time(@query_videos_rr) = %d ms", Date.now() - $scope._perf_start);
             var tseries = rez_v[0]._series;
             $scope.vidlist = rez_v;
 
             // get episode list
             tkcore.db.get_episode_data(tseries._id, function(eplist) {
+                logthis.debug("** _perf_time(@get_episode_data) = %d ms", Date.now() - $scope._perf_start);
 
                 // get images from database
                 tkcore.db.get_series_images(tseries, function(imgs) {
                     var tfanart, tposter, tbanner, season_count, imgurl;
+                    logthis.debug("** _perf_time(@get_series_images) = %d ms", Date.now() - $scope._perf_start);
 
                     tseries['episodes'] = Object.keys(eplist).map(function(x) { return eplist[x]; });
                     tseries['_imgdata'] = imgs;
@@ -315,6 +400,7 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
                     tfanart = get_selected_image(tseries._imgdata, 'fanart', tseries._id);
                     tposter = get_selected_image(tseries._imgdata, 'poster', tseries._id);
                     tbanner = get_selected_image(tseries._imgdata, 'banner', tseries._id);
+                    logthis.debug("** _perf_time(@get_selected_image) = %d ms", Date.now() - $scope._perf_start);
 
                     // populate the infobox
                     $scope.series_info = {
@@ -345,21 +431,28 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
                         $scope.imgdata.banner = imgurl;
                     }
 
-                    /*
-                    $scope.$$postDigest(function() {
-                        $scope.renderImages();
-                    });
-                    */
-
                     if(!$scope.$$phase) $scope.$apply();
-                    $scope._perf_stop = Date.now();
-                    $scope._perf_time = $scope._perf_stop - $scope._perf_start;
-                    logthis.debug("** _perf_time = %d ms", $scope._perf_time);
-                    hideSplash();
+                    logthis.debug("** _perf_time(@refresh) = %d ms", Date.now() - $scope._perf_start);
                 });
             });
         });
     };
+
+    $scope.$on('group-render-complete', function(evt) {
+        for(var iiep in $scope.vidlist) {
+            var tep = $scope.vidlist[iiep];
+            document.getElementById('imglist__' + tep._id).src = "data:" + tep._img.mimetype + ";base64," + tep._img.img;
+        }
+
+        // set up event listeners
+        document.getElementById('episode-list').addEventListener('contextmenu', $scope.contextMenu);
+
+        hideSplash();
+
+        $scope._perf_stop = Date.now();
+        $scope._perf_time = $scope._perf_stop - $scope._perf_start;
+        logthis.debug("** _perf_time = %d ms", $scope._perf_time);
+    });
 
     $scope.refresh();
     window.$scope = $scope;

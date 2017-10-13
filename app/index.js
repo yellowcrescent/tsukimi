@@ -134,7 +134,7 @@ status.once('failed', function() {
         if(nodelist.mongo && nodelist.tsukimi) {
             logger.info(`Found tsukimi node: ${nodelist.tsukimi.host} (${nodelist.tsukimi.txt.version}) [${nodelist.tsukimi.txt.platform}/${nodelist.tsukimi.txt.arch}]`);
             logger.info(`Got MongoDB connection string: ${nodelist.mongo.txt.mconnstr}`);
-            settings.get('mongo') = nodelist.mongo.txt.mconnstr;
+            settings.set('mongo', nodelist.mongo.txt.mconnstr);
             tskDatabaseConnect(function(err) {
                 if(!err) {
                     logger.info("Auto-discovery success!");

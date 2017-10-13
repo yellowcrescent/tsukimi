@@ -137,6 +137,23 @@ tsukimi.run(['$rootScope','$location','$routeParams', function($rootScope, $loca
 	});
 }]);
 
+/*
+onFinishRender directive
+https://stackoverflow.com/questions/15207788/calling-a-function-when-ng-repeat-has-finished
+*/
+tsukimi.directive('onFinishRender', function($timeout) {
+    return {
+        restrict: 'A',
+        link: function (scope, element, attr) {
+            if (scope.$last === true) {
+                $timeout(function () {
+                    scope.$emit(attr.onFinishRender);
+                });
+            }
+        }
+    }
+});
+
 /**
  * Utility functions
  **/

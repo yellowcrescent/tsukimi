@@ -130,7 +130,7 @@ function mpv_ipc_client(evt_cbx) {
     });
 
     sock.on('data', function(data) {
-        logger.debug("[mpv_ipc_client] %s", data);
+        logger.debug2("[mpv_ipc_client] %s", data);
 
         var pdata = String(data).trim().split('\n').map(function(x) { return JSON.parse(x); });
         for(var dseg in pdata) {

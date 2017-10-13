@@ -1,10 +1,10 @@
 <!--routes/view_group:posters-->
 <div id="series-list" class="tsk-epgroup">
-    <div id="series_{{tseries._id}}" class="tsk-poster"
+    <div id="series_{{tseries._id}}" class="tsk-poster" on-finish-render="group-render-complete"
          ng-repeat="tseries in serlist | orderBy:watchOrder:watchOrderRev | limitTo:watchLimit"
          ng-mouseover="showSeriesInfo(tseries._id)" ng-click="selectSeries(tseries._id)">
         <div class="tsk-poster-img">
-            <img ng-src="{{imglist[tseries._id]}}" />
+            <img id="imglist__{{tseries._id}}" class="imglist__" />
         </div>
     </div>
 

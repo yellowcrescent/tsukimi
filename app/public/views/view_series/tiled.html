@@ -1,8 +1,9 @@
 <!--routes/view_series:tiled-->
-<div id="recent-adds" class="tsk-epgroup">
-    <div class="tsk-epgroup-ep" ng-repeat="newep in vidlist | orderBy:watchOrder:watchOrderRev | limitTo:watchLimit">
+<div id="episode-list" class="tsk-epgroup">
+    <div class="tsk-epgroup-ep"  on-finish-render="group-render-complete" id="ep__{{newep._id}}"
+         ng-repeat="newep in vidlist | orderBy:watchOrder:watchOrderRev | limitTo:watchLimit">
         <div class="tsk-epgroup-ep-img">
-            <img ng-src="data:{{newep._img.mimetype}};base64,{{newep._img.img}}" id="epimg__{{newep._id}}" class="epimg__"
+            <img id="imglist__{{newep._id}}" class="imglist__"
                  ng-mouseover="showEpisodeInfo(newep._id)"
                  ng-click="playVideoByPath(newep._files[newep.sources[0].id].location[newep._files[newep.sources[0].id].default_location].fpath.real)" />
         </div>
