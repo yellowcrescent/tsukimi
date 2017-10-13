@@ -32,6 +32,9 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		$scope.flist = orderBy($scope.flist, pred, false);
 	};
 
+	// TODO: allow user to choose scraper
+	$scope.scraper = new tkcore.scrapers.Scraper_tvdb();
+
 	// event listener for keyboard stuff
 	document.body.addEventListener('keydown', _lib_event_keydown);
 
@@ -396,13 +399,13 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 		// set up 'save' callback
 		$scope.ssmodal.confirm = function(selected) {
-			logthis.debug("seriesSearch: selected tvdb id = %s", selected);
+			logthis.debug("seriesSearch: selected source id = %s", selected);
 			if(selected) {
 				// create progress modal
 				$scope.modalWait = $modal({ title: "Retrieving Series Information...", templateUrl: `${pubpath}/views/partials/modal_wait.html`, scope: $scope, content: "Retrieving data from TheTVDb" });
 				$scope.modalWait.contentIcon = "fa-cog fa-spin";
 
-				tkcore.scrapers.tvdb_get_series(selected, function(newdata) {
+				$scope.scraper.get_series(selected, function(newdata) {
 					if(newdata.status == "ok") {
 						// update modal text
 						$scope.modalWait.content = "Updating database";
@@ -436,12 +439,11 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 				$('#as_sericon').removeClass('fa-search');
 				$('#as_sericon').addClass('fa-refresh fa-spin');
 				$('#as_serbtn').prop('disabled', true);
-				tkcore.scrapers.tvdb_search(sterm.trim(), function(res) {
+				$scope.scraper.search_series(sterm.trim(), function(res) {
 					// enable search button again
 					$('#as_sericon').removeClass('fa-refresh fa-spin');
 					$('#as_sericon').addClass('fa-search');
 					$('#as_serbtn').prop('disabled', false);
-					logthis.debug("got tvdb response", res);
 					var tsdata = $.map($scope.serdata, function(x) { return x; });
 					for(ts in res.results) {
 						var frez = tsdata.filter(function(x) { return x.xrefs.tvdb == res.results[ts].id; });
@@ -459,7 +461,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 
 		// keydown callback
 		$scope.ssmodal.keydown = function(evt) {
-			logthis.debug("ssmodal keydown called; evt.code = %s; as_sersearch focus'd = %s",evt.code, $('#as_sersearch').is(':focus'));
+			//logthis.debug("ssmodal keydown called; evt.code = %s; as_sersearch focus'd = %s",evt.code, $('#as_sersearch').is(':focus'));
 			if($('#as_sersearch').is(':focus')) {
 				if(evt.code == 'Enter' || evt.code == 'NumpadEnter') {
 					$scope.ssmodal.search($scope.sersearch.qterm);
@@ -645,7 +647,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		$scope.scanStatus = { title: "Import", content: "Import in progress...", iconClassList: ['fa','fa-spin','fa-moon-o'], show: true };
 		if($scope.selection.length > 0) {
 			logthis.info("Starting import - %d files", $scope.selection.length);
-			logthis.debug("Selected entries:", $scope.selection);
+			logthis.debug2("Selected entries:", $scope.selection);
 			tkcore.db.import_selection($scope.selection, import_config, importProgressCbx, function(err) {
 				if(err) {
 					$scope.scanStatus.title = "Import failed";
@@ -736,12 +738,10 @@ function _lib_populate_rview(vobj, $scope) {
 }
 
 function _lib_event_keydown(evt) {
-	//console.log("got keydown event; hasFocus = "+$scope.hasFocus+"; evt =",evt);
-
 	var delkey = "Delete";
 	if(tkversion.os == "darwin") delkey = "Backspace";
 
-	console.log("keydown event:", evt);
+	//console.log("keydown event:", evt);
 
 	if($scope.hasFocus == 'modal' && $scope.modal.$isShown === true) {
 		if(evt.code == "Enter" || evt.code == "NumpadEnter") {

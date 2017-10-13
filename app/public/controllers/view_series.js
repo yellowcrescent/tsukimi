@@ -18,12 +18,15 @@ let vidstatus = {};
 let mpv_sock = null;
 let mpv_event = null;
 
-function viewSeriesController($scope, $location, $routeParams, $http, $filter, $modal, $alert) {
+function viewSeriesController($scope, $location, $routeParams, $http, $filter, $modal, $alert, $timeout) {
     console.log("viewSeriesController start");
 
     var template_map = {
         tiled: {url: 'views/view_series/tiled.html'}
     };
+    var scraper = new tkcore.scrapers.Scraper();
+
+    $scope._perf_start = Date.now();
 
     $scope.group = $routeParams.group;
     $scope.series_id = $routeParams.series;
@@ -91,7 +94,7 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
 
         // fetch up2date ep data from the database
         tkcore.db.get_episode_data($scope.series_id, function(eplist) {
-            tkcore.scrapers.fetch_episode_images(eplist, function(timglist) {
+            scraper.fetch_episode_images(eplist, function(timglist) {
                 if(!timglist.length) {
                     logthis.error("Failed to fetch episode images");
                     $scope.modalWait.hide();
@@ -223,7 +226,7 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
                     $scope.modalWait.content = "Fetching images...";
                     _lib_scopeApply($scope);
 
-                    tkcore.scrapers.fetch_series_images($scope.serdata, function(newimgs) {
+                    scraper.fetch_series_images($scope.serdata, function(newimgs) {
                         tkcore.db.sync_series_image_metadata($scope.serdata, function(err) {
                             if(err) logthis.error("Failed to sync image metadata for '%s'", $scope.series_id, err);
 
@@ -281,6 +284,13 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
         });
     };
 
+    $scope.renderImages = function() {
+        for(var iiep in $scope.vidlist) {
+            var tep = $scope.vidlist[iiep];
+            $('#epimg__' + tep._id)[0].src = "data:" + tep._img.mimetype + ";base64," + tep._img.img;
+        }
+    };
+
     $scope.refresh = function() {
         showSplash();
         tkcore.db.query_videos_rr(qparam, function(err0, rez_v) {
@@ -335,8 +345,16 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
                         $scope.imgdata.banner = imgurl;
                     }
 
-                    if(!$scope.$$phase) $scope.$apply();
+                    /*
+                    $scope.$$postDigest(function() {
+                        $scope.renderImages();
+                    });
+                    */
 
+                    if(!$scope.$$phase) $scope.$apply();
+                    $scope._perf_stop = Date.now();
+                    $scope._perf_time = $scope._perf_stop - $scope._perf_start;
+                    logthis.debug("** _perf_time = %d ms", $scope._perf_time);
                     hideSplash();
                 });
             });

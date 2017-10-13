@@ -22,7 +22,7 @@ const events = require('events');
 const logthis = require('./logthis');
 const scanner = require('./scanner');
 const utils = require('./utils');
-const {fetch_series_images, fetch_episode_images} = require('./scrapers');
+const {Scraper, Scraper_tvdb} = require('./scrapers');
 
 var emitter = new events.EventEmitter();
 var monjer = false;
@@ -210,13 +210,15 @@ function get_series_images(serdata, _cbx, run_count = 0) {
 		]
 	};
 
+	var scraper = new Scraper();
+
 	monjer.collection('images').find(qdata).toArray(function(err, docs) {
 		if(err) {
 			logthis.error("Failed to fetch series images", err);
 			_cbx([]);
 		} else if(docs.length == 0 && run_count == 0) {
 			logthis.info("Series images not found in database; re-scraping images from source...");
-			fetch_series_images(serdata, function(idata_new) {
+			scraper.fetch_series_images(serdata, function(idata_new) {
 				if(idata_new.length) {
 					put_image_data(idata_new, function(err) {
 						if(err) logthis.error("Failed to save image data", err);
@@ -251,13 +253,15 @@ function get_series_episode_images(eplist, _cbx, run_count = 0) {
 		]
 	};
 
+	var scraper = new Scraper();
+
 	monjer.collection('images').find(qdata).toArray(function(err, docs) {
 		if(err) {
 			logthis.error("Failed to fetch episode images", err);
 			_cbx([]);
 		} else if(docs.length == 0 && run_count == 0) {
 			logthis.info("Episode images not found in database; re-scraping images from source...");
-			fetch_episode_images(eplist, function(idata_new) {
+			scraper.fetch_episode_images(eplist, function(idata_new) {
 				if(idata_new.length) {
 					put_image_data(idata_new, function(err) {
 						if(err) logthis.error("Failed to save image data", err);
@@ -383,7 +387,7 @@ function get_file_groups(_cbx) {
 
 	// run aggregation
 	monjer.collection('files').group({ tdex_id: 1 }, {}, { count: 0, new: 0, complete: 0 }, reducer, function(err,docs) {
-		logthis.debug("get_file_groups: returned %d groups", docs.length, { err: err, docs: docs });
+		logthis.debug("get_file_groups: returned %d groups", docs.length);
 		_cbx(err,docs);
 	});
 }
@@ -423,10 +427,10 @@ function add_series_full(sname, indata, _cbx) {
 	delete(sdata.episodes);
 
 	// generate a new norm_id
-	var new_tdex = normalize(sdata.ctitle);
+	var new_tdex = Scraper.normalize(sdata.ctitle);
 
 	// generate series_id
-	var tser_id = mkid_series(new_tdex, sdata);
+	var tser_id = Scraper.mkid_series(new_tdex, sdata);
 
 	// set series data
 	var thisx = {
@@ -446,7 +450,7 @@ function add_series_full(sname, indata, _cbx) {
 	// process episode data
 	var eplist = [];
 	for(ti in indata.episodes) {
-		var thisep = episode_schema_update(indata.episodes[ti], tser_id);
+		//var thisep = episode_schema_update(indata.episodes[ti], tser_id);
 		eplist.push(thisep);
 	}
 
@@ -471,79 +475,6 @@ function add_series_full(sname, indata, _cbx) {
 		}
 	});
 
-}
-
-function episode_schema_update(epdata, serid, epid) {
-	var newep = {
-					_id: null,
-					series_id: serid,
-					season: parseInt(epdata.SeasonNumber) || null,
-					episode: parseInt(epdata.EpisodeNumber) || null,
-					episode_absolute: parseInt(epdata.absolute_number) || null,
-					title: epdata.EpisodeName,
-					alt_titles: [],
-					first_aired: parseInt(Date.parse(epdata.FirstAired) / 1000) || null,
-					lang: epdata.Language,
-					lastupdated: epdata.lastupdated || parseInt(Date.now()),
-					people: {
-								director: tvdb_split(epdata.Director),
-								writers: tvdb_split(epdata.Writer),
-								guests: tvdb_split(epdata.GuestStars),
-								actors: []
-							},
-					xref: {
-							tvdb: epdata.id,
-							tvdb_season: epdata.seasonid || null,
-							tvdb_series: epdata.seriesid || null,
-							imdb: epdata.IMDB_ID || null,
-							production_code: epdata.ProductionCode || null
-						  },
-					synopsis: {
-								tvdb: epdata.Overview
-							  },
-					images: [{
-								source: 'tvdb',
-								id: `${epdata.seriesid}-${epdata.id}`,
-								type: 'screenshot',
-								url: `http://thetvdb.com/banners/${epdata.filename}`,
-								default: true,
-								selected: false
-							}],
-					default_synopsis: 'tvdb',
-					scrape_time: parseInt(Date.now() / 1000)
-				};
-	newep._id = mkid_episode(serid, newep);
-	return newep
-}
-
-function tvdb_split(instr) {
-	try {
-		return instr.split('|').filter(function(x) { return x.length; });
-	} catch(e) {
-		logthis.warning("Failed to split '%s'", instr, e);
-		return [];
-	}
-}
-
-function mkid_series(sid, xdata) {
-	// create unique series ID with tdex_id + release year
-	var dyear;
-	if(xdata.tv.debut) {
-		dyear = String((new Date(parseFloat(xdata.tv.debut) * 1000.0)).getFullYear());
-	} else {
-		dyear = "90" + String(parseInt(Date.now() / 1000)).substr(-5);
-	}
-	return sid + "." + dyear;
-}
-
-function mkid_episode(sid, xdata) {
-	var isuf = (xdata.id || String(Date.now() / 1000000.0).split('.')[1]);
-	return sid + "." + (String(xdata.season) || '0') + "." + (String(xdata.episode) || '0') + "." + isuf;
-}
-
-function mkid_video(serdata, epidata) {
-	var isuf = (epidata.first_aired || String(Date.now() / 1000000.0).split('.')[1]);
-	return serdata._id + "." + (String(epidata.season) || '0') + "." + (String(epidata.episode) || '0') + "." + isuf;
 }
 
 function update_file_series(match, serid, _cbx) {
@@ -612,6 +543,8 @@ function import_selection(selection, iconfig, cbProgress, _cbx) {
 		}
 	};
 
+	var scraper = new Scraper();
+
 	var vidImport = function(slist, curIndex, _cbx) {
 		// retrieve file object, fresh from the db
 		monjer.collection('files').findOne({ _id: slist[curIndex]._id }, function(err, tfile) {
@@ -623,7 +556,7 @@ function import_selection(selection, iconfig, cbProgress, _cbx) {
 					console.log("tep =", tep);
 
 					// generate video ID & update progress
-					tvid_id = mkid_video(tser, tep);
+					tvid_id = Scraper.mkid_video(tser, tep);
 					cbProgress(tvid_id);
 
 					// check if video already exists
@@ -686,7 +619,7 @@ function import_selection(selection, iconfig, cbProgress, _cbx) {
 							}
 
 							// fetch episode images
-							fetch_episode_images([tep], function(timglist) {
+							scraper.fetch_episode_images([tep], function(timglist) {
 								var timg = null;
 								if(timglist.length) {
 									logthis.debug("Fetched episode image OK");
@@ -782,9 +715,6 @@ function get_images(qparams, _cbx) {
 	monjer.collection('images').find(qparams).toArray(_cbx);
 }
 
-function normalize(instr) {
-	return instr.replace(/[ ★☆\.]/g,'_').replace(/['`\-\?!%&\*@\(\)#:,\/\\;\+=\[\]\{\}\$\<\>]/g,'').toLowerCase().trim();
-}
 
 /**
  * Exports

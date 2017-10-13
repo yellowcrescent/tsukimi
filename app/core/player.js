@@ -94,7 +94,7 @@ exports.mpv_play = function(infile, xargs, _cbx) {
             mpv_ipc_client(_cbx);
             mpv_started = true;
         }
-        logger.debug("[mpv] " + data.toString());
+        logger.debug2("[mpv] " + data.toString());
     });
 
     mpv.on('close', function(exitCode) {
@@ -113,15 +113,15 @@ function mpv_ipc_client(evt_cbx) {
         if(!args) args = [];
         reqid++;
         var ocmdstr = JSON.stringify({command: [cmd].concat(args), request_id: reqid}) + '\n';
-        logger.debug("[mpv_ipc_client] command out: '%s'", ocmdstr.trim());
+        logger.debug2("[mpv_ipc_client] command out: '%s'", ocmdstr.trim());
         sock.write(ocmdstr);
         return reqid;
     };
 
-    logger.debug("[mpv_ipc_client] establishing IPC connection...");
+    logger.debug2("[mpv_ipc_client] establishing IPC connection...");
     var sock = new net.Socket();
     sock.connect(mpv_sockpath, function() {
-        logger.debug("[mpv_ipc_client] connected to mpv JSON IPC interface");
+        logger.debug2("[mpv_ipc_client] connected to mpv JSON IPC interface");
         playstat = {filename: null, paused: false, pl_item: null, pl_tot: null,
                     chapter: null, chapter_list: [], chapter_tot: null, chapter_title: null};
         if(evt_cbx) {
@@ -137,39 +137,39 @@ function mpv_ipc_client(evt_cbx) {
             var dchunk = pdata[dseg];
 
             if(dchunk.request_id) {
-                logger.debug("** mpv->request-response: #%s", dchunk.request_id);
+                logger.debug2("** mpv->request-response: #%s", dchunk.request_id);
                 event.emit(`request-${dchunk.request_id}`, dchunk);
             } else if(dchunk.event) {
-                logger.debug("** mpv->event: %s", dchunk.event);
+                logger.debug2("** mpv->event: %s", dchunk.event);
                 event.emit(`event-${dchunk.event}`);
             }
         }
     });
 
     sock.on('close', function() {
-        logger.debug("[mpv_ipc_client] IPC connection closed");
+        logger.debug2("[mpv_ipc_client] IPC connection closed");
         if(evt_cbx) {
             evt_cbx({ msgtype: "_ipc_control", status: "disconnect" });
         }
     });
 
     event.on('event-pause', function() {
-        logger.debug('** mpv->event.on(event-pause)');
+        logger.debug2('** mpv->event.on(event-pause)');
         playstat.paused = true;
         event.emit('player-state-updated', playstat);
     });
 
     event.on('event-unpause', function() {
-        logger.debug('** mpv->event.on(event-unpause)');
+        logger.debug2('** mpv->event.on(event-unpause)');
         playstat.paused = false;
         event.emit('player-state-updated', playstat);
     });
 
     event.on('event-file-loaded', function() {
-        logger.debug('** mpv->event.on(event-file-loaded)');
+        logger.debug2('** mpv->event.on(event-file-loaded)');
         var treq = sock_writer('get_property', ['playlist']);
         event.once(`request-${treq}`, function(data) {
-            logger.debug('** mpv->event.on(event-file-loaded).once(playlist); data = "%j"', data);
+            logger.debug2('** mpv->event.on(event-file-loaded).once(playlist); data = "%j"', data);
             var tdata = data.data;
             for(var ti in tdata) {
                 if(tdata[ti].current) {
@@ -184,16 +184,16 @@ function mpv_ipc_client(evt_cbx) {
     });
 
     event.on('event-chapter-change', function() {
-        logger.debug('** mpv->event.on(event-chapter-change)');
+        logger.debug2('** mpv->event.on(event-chapter-change)');
         var treq = sock_writer('get_property', ['chapter']);
         event.once(`request-${treq}`, function(data) {
-            logger.debug('** mpv->event.on(event-chapter-change).once(chapter); data = "%j"', data);
+            logger.debug2('** mpv->event.on(event-chapter-change).once(chapter); data = "%j"', data);
             var tdata = data.data;
             playstat.chapter = tdata;
 
             var treq2 = sock_writer('get_property', ['chapter-list']);
             event.once(`request-${treq2}`, function(data) {
-                logger.debug('** mpv->event.on(event-chapter-change).once(chapter-list); data = "%j"', data);
+                logger.debug2('** mpv->event.on(event-chapter-change).once(chapter-list); data = "%j"', data);
                 var tdata = data.data;
 
                 playstat.chapter_tot = tdata.length;
@@ -210,7 +210,7 @@ function mpv_ipc_client(evt_cbx) {
     event.on('player-state-updated', function(newdata) {
         var dout = _.extend(newdata);
         vstat = _.extend(newdata);
-        logger.debug("** mpv->player-state-updated: newdata = %j", dout);
+        logger.debug2("** mpv->player-state-updated: newdata = %j", dout);
         if(evt_cbx) {
             evt_cbx({ msgtype: '_ipc_vidstatus', data: dout });
         }

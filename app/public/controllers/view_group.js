@@ -21,6 +21,8 @@ function viewGroupController($scope, $location, $routeParams, $http) {
         posters: {url: 'views/view_group/posters.html', imgtype: 'poster'}
     };
 
+    $scope._perf_start = Date.now();
+
     $scope.group = $routeParams.group;
     $scope.groupName = tkconfig.get('groups')[$scope.group];
     $scope.group_list = tkconfig.get('groups');
@@ -86,6 +88,7 @@ function viewGroupController($scope, $location, $routeParams, $http) {
     $scope.refresh = function() {
         showSplash();
         tkcore.db.query_series_rr(qparam, function(err, rez) {
+            logthis.debug("** _perf_time(@query_series_rr) = %d ms", Date.now() - $scope._perf_start);
             console.log("query_series_rr returned:", rez);
 
             // create image list
@@ -100,9 +103,14 @@ function viewGroupController($scope, $location, $routeParams, $http) {
                     continue;
                 }
             }
+            logthis.debug("** _perf_time(@get_selected_image) = %d ms", Date.now() - $scope._perf_start);
 
             $scope.serlist = rez;
             if(!$scope.$$phase) $scope.$apply();
+
+            $scope._perf_stop = Date.now();
+            $scope._perf_time = $scope._perf_stop - $scope._perf_start;
+            logthis.debug("** _perf_time = %d ms", $scope._perf_time);
             hideSplash();
         });
     };

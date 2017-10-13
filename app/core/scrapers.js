@@ -5,7 +5,7 @@
  * scrapers.js
  * Scraper client interface
  *
- * Copyright (c) 2016 Jacob Hipps/Neo-Retro Group, Inc.
+ * Copyright (c) 2016-2017 Jacob Hipps/Neo-Retro Group, Inc.
  * https://ycnrg.org/
  *
  * @author      Jacob Hipps - jacob@ycnrg.org
@@ -51,11 +51,12 @@ class Scraper {
 
     /* Common methods */
     fetch_series_images(serdata, _cbx) {
+        var _this = this;
         var artdata = serdata.artwork;
         var imgs = [];
         var ilist = [];
 
-        logger.debug("fetch_series_images: serdata:", serdata);
+        logger.debug2("fetch_series_images: serdata:", serdata);
 
         var _fetch_images = function(idex, _cxx) {
             var tart = ilist[idex];
@@ -63,7 +64,7 @@ class Scraper {
             // `encoding: null` *must* be set to prevent request from mangling the response
             // by trying to decode it as UTF-8. instead, it returns `body` as a Buffer() object
             logger.debug("Fetching image '%s'...", tart.url);
-            this._req({ url: tart.url, encoding: null }, function(err, resp, body) {
+            _this._req({ url: tart.url, encoding: null }, function(err, resp, body) {
                 if(resp.statusCode == 200 && !err) {
                     if(resp.headers['content-type'].match(/^image/i)) {
                         var tobj = {
@@ -83,7 +84,7 @@ class Scraper {
                         delete(tobj.metadata._ttype);
                         delete(tobj.metadata._series);
                         imgs.push(tobj);
-                        logger.verbose("Saved image '%s' --> %s", tart.url, tobj._id);
+                        logger.debug("Saved image '%s' --> %s", tart.url, tobj._id);
                     } else {
                         logger.warning("Invalid MIME type '%s' for '%s'", resp.headers['content-type'], tart.url);
                     }
@@ -116,16 +117,17 @@ class Scraper {
             }
         }
 
-        logger.verbose("Preparing to fetch %d images for %s...", ilist.length, serdata._id);
+        logger.debug("Preparing to fetch %d images for %s...", ilist.length, serdata._id);
         _fetch_images(0, _cbx);
     }
 
-    fetch_episode_images() {
+    fetch_episode_images(eplist, _cbx) {
+        var _this = this;
         var ilist = [];
         var imgs = [];
         var ilist = [];
 
-        console.log("fetch_episode_images: eplist:", eplist);
+        logger.debug2("fetch_episode_images: eplist:", eplist);
 
         var _fetch_images = function(idex, _cxx) {
             var tart = ilist[idex];
@@ -133,7 +135,7 @@ class Scraper {
             // `encoding: null` *must* be set to prevent request from mangling the response
             // by trying to decode it as UTF-8. instead, it returns `body` as a Buffer() object
             logger.debug("Fetching image '%s'...", tart.url);
-            this._req({ url: tart.url, encoding: null }, function(err, resp, body) {
+            _this._req({ url: tart.url, encoding: null }, function(err, resp, body) {
                 if(resp.statusCode == 200 && !err) {
                     if(resp.headers['content-type'].match(/^image/i)) {
                         var tobj = {
@@ -152,7 +154,7 @@ class Scraper {
                         delete(tobj.metadata._episode);
                         delete(tobj.metadata._series);
                         imgs.push(tobj);
-                        logger.verbose("Saved image '%s' --> %s", tart.url, tobj._id);
+                        logger.debug("Saved image '%s' --> %s", tart.url, tobj._id);
                     } else {
                         logger.warning("Invalid MIME type '%s' for '%s'", resp.headers['content-type'], tart.url);
                     }
@@ -185,22 +187,57 @@ class Scraper {
             }
         }
 
-        logger.verbose("Preparing to fetch images for %d episodes...", eplist.length);
+        logger.debug("Preparing to fetch images for %d episodes...", eplist.length);
         _fetch_images(0, _cbx);
     }
 
     /* Utility methods */
+    static mkid_series(sid, xdata) {
+        // create unique series ID with tdex_id + release year
+        // if @sid (tdex_id) is not passed in, the corrected title
+        // will be used instead
+        var dyear;
+
+        if(!sid) {
+            sid = Scraper.normalize(xdata.ctitle);
+        }
+
+        if(xdata.tv.debut) {
+            dyear = String((new Date(parseFloat(xdata.tv.debut) * 1000.0)).getFullYear());
+        } else {
+            dyear = "90" + String(parseInt(Date.now() / 1000)).substr(-5);
+        }
+
+        return sid + "." + dyear;
+    }
+
+    static mkid_episode(sid, xdata) {
+        var isuf = (xdata.id || String(Date.now() / 1000000.0).split('.')[1]);
+        return sid + "." + (String(xdata.season) || '0') + "." + (String(xdata.episode) || '0') + "." + isuf;
+    }
+
+    static mkid_video(serdata, epidata) {
+        var isuf = (epidata.first_aired || String(Date.now() / 1000000.0).split('.')[1]);
+        return serdata._id + "." + (String(epidata.season) || '0') + "." + (String(epidata.episode) || '0') + "." + isuf;
+    }
+
+    static normalize(instr) {
+        return instr.replace(/[ ★☆\.]/g,'_').replace(/['`\-\?!%&\*@\(\)#:,\/\\;\+=\[\]\{\}\$\<\>]/g,'').toLowerCase().trim();
+    }
+
     static _fix_xml_result(inarr) {
         // xml2js turns single-element tags into arrays... every time
         // what a fucking pain
         var newarr = {};
-        for(i in inarr) {
+
+        for(var i in inarr) {
             if(inarr[i].length == 1) {
                 newarr[i] = inarr[i][0];
             } else {
                 newarr[i] = inarr[i];
             }
         }
+
         return newarr;
     }
 }
@@ -210,13 +247,14 @@ class Scraper_tvdb extends Scraper {
     /* Usage: Scraper_tvdb({baseuri: '', apikey: '', banner_path: ''}) */
     constructor(conf) {
         super();
-        this.conf = _.defaults({baseuri: 'https://api.thetvdb.com',
+        if(typeof conf == 'undefined') conf = {};
+        this._conf = _.defaults({baseuri: 'https://api.thetvdb.com',
                                 banner_path: 'http://thetvdb.com/banners',
                                 apikey: 'DE1C5FD2150BEE8D'}, conf);
         this.auth_token = null;
         this._request = request.defaults({baseUrl: `http://thetvdb.com/api/${this._conf.apikey}`,
                                           headers: {'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)"}});
-        this._request2 = request.defaults({baseUrl: this._conf.baseuri,
+        this._request2 = request.defaults({baseUrl: this._conf.baseuri, json: true,
                                            headers: {'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)"}});
     }
 
@@ -232,18 +270,23 @@ class Scraper_tvdb extends Scraper {
     }
 
     auth(_cbx) {
+        var _this = this;
+
         if(this.auth_token) {
             // if we already have a token, we're good to go
             _cbx(null);
         } else {
             // otherwise, send the auth request
-            this._request2({ uri: '/login', method: 'POST', body: { apikey: this.conf.apikey } }, function(err,resp,body) {
-                if(resp.statusCode == 200) {
+            this._request2({ uri: '/login', method: 'POST', body: { apikey: this._conf.apikey } }, function(err,resp,body) {
+                if(err) {
+                    logger.error("Failed to authenticate to thetvdb. Request Failed: ", err);
+                    _cbx(err);
+                } else if(resp.statusCode == 200) {
                     if(body.token) {
                         // we got the token! save it for later
-                        this.auth_token = body.token;
-                        logger.verbose("Authenticated to thetvdb OK; bearer token: %s", this.auth_token);
-                        this._request2 = this._request2.defaults({ headers: { 'Authorization': "Bearer "+this.auth_token } });
+                        _this.auth_token = body.token;
+                        logger.verbose("Authenticated to thetvdb OK; bearer token: %s", _this.auth_token);
+                        _this._request2 = _this._request2.defaults({ headers: { 'Authorization': `Bearer ${_this.auth_token}` } });
                         _cbx(null);
                     } else {
                         logger.error("Unexpected response data", { body: body });
@@ -258,14 +301,16 @@ class Scraper_tvdb extends Scraper {
     }
 
     search_series(qseries, _cbx) {
-        this.tvdb_auth(function(err) {
+        var _this = this;
+
+        this.auth(function(err) {
             if(!err) {
-                this._request2({ uri: '/search/series', qs: { name: qseries } }, function(err,resp,body) {
+                _this._request2({ uri: '/search/series', qs: { name: qseries }}, function(err,resp,body) {
                     if(resp.statusCode == 200) {
-                        logger.verbose("got %d results from tvdb", body.data.length, { qseries: qseries, body: body });
+                        logger.debug2("got %d results from tvdb", body.data.length, { qseries: qseries, body: body });
                         _cbx({ status: "ok", results: body.data });
                     } else if(resp.statusCode == 404) {
-                        logger.warning("tvdb query returned 404 No Results", { qseries: qseries });
+                        logger.debug("tvdb query returned 404 No Results", { qseries: qseries });
                         _cbx({ status: "ok", results: [] });
                     } else if(resp.statusCode == 401) {
                         logger.warning("tvdb returned 401 Unauthorized");
@@ -283,7 +328,9 @@ class Scraper_tvdb extends Scraper {
     }
 
     get_series(serid, _cbx) {
-        logger.verbose("fetching tvdb data for series ID '%s'", serid);
+        var _this = this;
+        logger.debug("fetching tvdb data for series ID '%s'", serid);
+
         this._request({ uri: '/series/'+serid+'/all/en.xml' }, function(err,resp,body) {
             if(resp.statusCode == 200) {
                 logger.debug("got series data from tvdb; parsing XML response");
@@ -291,10 +338,10 @@ class Scraper_tvdb extends Scraper {
                 xml2js.parseString(body, function(err,result) {
                     if(!err) {
                         // get data from result
-                        logger.debug("raw decoded XML response", { result: result });
+                        logger.debug2("raw decoded XML response", { result: result });
                         var xdata = result.Data;
-                        this.tvdb_process(xdata, function(outdata) {
-                            logger.verbose("Retrieved series, episode, and banner data OK", { serid: serid, outdata: outdata });
+                        _this.tvdb_process(xdata, function(outdata) {
+                            logger.debug("Retrieved series, episode, and banner data OK", { serid: serid, outdata: outdata });
                             _cbx({ status: "ok", result: outdata });
                         });
                     } else {
@@ -310,7 +357,9 @@ class Scraper_tvdb extends Scraper {
     }
 
     get_artwork(serid, adefs, _cbx) {
+        var _this = this;
         var xdout = { banners: [], fanart: [], poster: [], season: [] };
+
         this._request({ uri: '/series/'+serid+'/banners.xml' }, function(err,resp,body) {
             if(resp.statusCode == 200) {
                 logger.debug("got banner data from tvdb; parsing XML response", { serid: serid });
@@ -318,7 +367,7 @@ class Scraper_tvdb extends Scraper {
                 xml2js.parseString(body, function(err,result) {
                     if(!err) {
                         // get data from result
-                        logger.debug("raw decoded XML response", { result: result });
+                        logger.debug2("raw decoded XML response", { result: result });
                         var blist = result.Banners.Banner;
                         for(bi in blist) {
                             var bb = Scraper._fix_xml_result(blist[bi]);
@@ -387,10 +436,13 @@ class Scraper_tvdb extends Scraper {
                     fetched: parseInt(Date.now() / 1000)
                   };
 
+        // set series ID
+        txc._id = Scraper.mkid_series(null, txc);
+
         // get episodes
         txc.episodes = [];
         for(tei in indata.Episode) {
-            txc.episodes[tei] = Scraper._fix_xml_result(indata.Episode[tei]);
+            txc.episodes[tei] = tvdb_episode_schema_update(Scraper._fix_xml_result(indata.Episode[tei]), txc._id);
         }
 
         // get banner defaults
@@ -409,6 +461,58 @@ class Scraper_tvdb extends Scraper {
         });
     }
 
+    tvdb_episode_schema_update(epdata, serid) {
+        var newep = {
+            _id: null,
+            series_id: serid,
+            season: parseInt(epdata.SeasonNumber) || null,
+            episode: parseInt(epdata.EpisodeNumber) || null,
+            episode_absolute: parseInt(epdata.absolute_number) || null,
+            title: epdata.EpisodeName,
+            alt_titles: [],
+            first_aired: parseInt(Date.parse(epdata.FirstAired) / 1000) || null,
+            lang: epdata.Language,
+            lastupdated: epdata.lastupdated || parseInt(Date.now()),
+            people: {
+                        director: this._tvdb_split(epdata.Director),
+                        writers: this._tvdb_split(epdata.Writer),
+                        guests: this._tvdb_split(epdata.GuestStars),
+                        actors: []
+                    },
+            xref: {
+                    tvdb: epdata.id,
+                    tvdb_season: epdata.seasonid || null,
+                    tvdb_series: epdata.seriesid || null,
+                    imdb: epdata.IMDB_ID || null,
+                    production_code: epdata.ProductionCode || null
+                  },
+            synopsis: {
+                        tvdb: epdata.Overview
+                      },
+            images: [{
+                        source: 'tvdb',
+                        id: `${epdata.seriesid}-${epdata.id}`,
+                        type: 'screenshot',
+                        url: `http://thetvdb.com/banners/${epdata.filename}`,
+                        default: true,
+                        selected: false
+                    }],
+            default_synopsis: 'tvdb',
+            scrape_time: parseInt(Date.now() / 1000)
+        };
+
+        newep._id = Scraper.mkid_episode(serid, newep);
+        return newep
+    }
+
+    _tvdb_split(instr) {
+        try {
+            return instr.split('|').filter(function(x) { return x.length; });
+        } catch(e) {
+            logthis.warning("Failed to split '%s'", instr, e);
+            return [];
+        }
+    }
 }
 
 
