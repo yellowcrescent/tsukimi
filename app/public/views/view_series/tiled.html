@@ -23,10 +23,16 @@
     <div class="tsk-infobox-inner">
         <div class="tsk-infobox-epnumbers"><span ng-bind="infobox.season"></span>.<span ng-bind="infobox.episode"></span></div>
         <div class="tsk-infobox-epheading" ng-bind="infobox.title"></div>
+        <div class="tsk-infobox-badgebox">
+            <div ng-repeat="bgrp in infobox.badges" class="tsk-infobox-badge">
+                <img ng-repeat="tbad in bgrp" ng-src="img/badges/{{tbad}}" class="tsk-infobox-badge-img" />
+            </div>
+        </div>
         <div class="tsk-infobox-subheading">
             <div ng-bind="infobox.first_aired"></div>
-            <div><span ng-bind="infobox.vheight"></span>p</div>
+            <!-- <div><span ng-bind="infobox.vheight"></span>p</div> -->
             <div>Runtime: <span ng-bind="infobox.duration"></span></div>
+            <!--
             <div>
                 <span ng-bind="infobox.vformat"></span>
                 <span ng-show="infobox.vprofile">(<span ng-bind="infobox.vprofile"></span>)</span>
@@ -36,6 +42,7 @@
                 <span>{{ttrack.format | uppercase}}</span>
                 (<span ng-bind="ttrack.channels"></span>ch @ <span>{{ttrack.sampling_rate / 1000}}</span>kHz)
             </div>
+            -->
         </div>
         <div class="tsk-infobox-desc" ng-bind="infobox.desc"></div>
     </div>

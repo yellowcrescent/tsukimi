@@ -8,6 +8,7 @@ dist
 build
 build-dbg
 .cache
+.sass-cache
 node_modules
 
 src/libs/*
@@ -16,4 +17,5 @@ src/libs/*
 app/*.ico
 app/*.icns
 app/public/vendor
+app/public/img/badges/*.png
 app/public/css/*.*

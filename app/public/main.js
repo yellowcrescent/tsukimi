@@ -151,7 +151,7 @@ tsukimi.directive('onFinishRender', function($timeout) {
                 });
             }
         }
-    }
+    };
 });
 
 /**
@@ -218,7 +218,7 @@ function hideSplash() {
 
 function setGlobalCursor(curname) {
 	if(typeof curname == 'undefined') {
-		curname = 'auto';
+		curname = 'default';
 	}
 	$('body').css('cursor', curname);
 }

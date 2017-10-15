@@ -178,6 +178,19 @@ gulp.task('icons', function() {
     });
 });
 
+gulp.task('badges', function() {
+        var mogargs = ['-verbose', '-format', 'png', '-path',
+                       `${basedir}/app/public/img/badges`, `${basedir}/src/badges/*.ai`];
+        gutil.log('badges', C.white("Rendering badges to raster images..."));
+        var sout = spawn('mogrify', mogargs);
+        if(sout.error || sout.status) {
+            gutil.log(C.red("Failed to render badges! "+sout.error));
+            gutil.log("Program output:");
+            console.dir(sout);
+        }
+        gutil.log('badges', C.green("Badges rendered successfully!"));
+});
+
 // cleanup task
 gulp.task('build-dist', ['bower', 'compass', 'icons', 'icon_icns', 'icon_ico'], function() {
     mkdirp.sync('build', {mode: 0755});
@@ -237,7 +250,7 @@ gulp.task('run', function() {
 });
 
 // default task
-gulp.task('default', [ 'lint', 'bower', 'compass', 'native_mods' ]);
-gulp.task('build', [ 'icons', 'icon_icns', 'icon_ico', 'build-dist' ]);
-gulp.task('build-dbg', [ 'icons', 'icon_icns', 'icon_ico' ]);
+gulp.task('default', [ 'lint', 'bower', 'compass', 'native_mods', 'badges' ]);
+gulp.task('build', [ 'default', 'icons', 'icon_icns', 'icon_ico', 'build-dist' ]);
+gulp.task('build-dbg', [ 'default', 'icons', 'icon_icns', 'icon_ico' ]);
 gulp.task('dev', ['lint', 'compass', 'runapp']);

@@ -1,0 +1,114 @@
+/**
+ ******************************************************************************
+ **%%vim: set modelines=15:
+ *
+ * _settings.scss
+ * Settings page styles
+ *
+ * Copyright (c) 2017 Jacob Hipps/Neo-Retro Group, Inc.
+ * https://ycnrg.org/
+ *
+ * @author      Jacob Hipps - jacob@ycnrg.org
+ * @license     MPLv2 <https://www.mozilla.org/en-US/MPL/2.0/>
+ * @param       vim: set ts=4 sw=4 noexpandtab syntax=scss:
+ *
+ *****************************************************************************/
+
+$settings_sidebar_width:    300px;
+
+#settings-viewport {
+    position: absolute;
+    top: $header_height;
+    left: $settings_sidebar_width;
+    right: 0px;
+    bottom: 0px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.tsk-ssidebar {
+    position: fixed;
+    top: $header_height;
+    bottom: 0px;
+    width: $settings_sidebar_width;
+    padding-top: 20px;
+    overflow: hidden;
+    background: $sidebar_bg;
+    transition: box-shadow 1.25s ease-out;
+    font-family: "Kozuka Gothic Pro R", "Kozuka Gothic Pro";
+    font-weight: 500;
+    font-size: 14px;
+
+    & h1 {
+        font-family: "Ryo Gothic Plus";
+        font-weight: 900;
+        font-size: 32px;
+        margin: 0px 15px 10px 20px;
+        padding: 0px 0px 5px 10px;
+        border-bottom: 1px solid rgba(64,64,64,0.5);
+    }
+
+    & li {
+        padding: 5px 10px;
+        border-left: 15px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+
+        &:hover {
+            border-left: 15px solid rgba(64, 64, 64, 1.0);
+            background: rgba(64, 64, 64, 0.3);
+        }
+
+        & span {
+            width: 30px;
+        }
+    }
+
+    & .separator {
+        height: 1px;
+        border-bottom: 1px solid rgba(60, 60, 60, 0.4);
+        margin: 7px 15px 12px 10px;
+    }
+}
+
+.tsk-setbox {
+    background: rgba(220, 220, 220, 1.0);
+    border: 1px solid rgba(60, 60, 60, 0.2);
+    border-radius: 6px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    width: 900px;
+    margin: 50px auto;
+
+    &-header {
+        padding: 15px;
+        border-bottom: 1px solid rgba(60, 60, 60, 0.6);
+
+        & h4 {
+            font-family: "Kozuka Gothic Pro R", "Kozuka Gothic Pro";
+            font-weight: 500;
+            font-size: 24px;
+            margin: 0;
+        }
+
+        &-icon {
+            vertical-align: -8px;
+            margin-right: 10px;
+        }
+    }
+
+    &-body {
+        overflow: hidden;
+        padding: 20px;
+
+        & blockquote {
+            color: rgba(60,60,60,0.7);
+            font-size: 17px;
+        }
+    }
+
+    &-footer {
+        padding: 20px;
+        text-align: right;
+        border-top: 1px solid rgba(60, 60, 60, 0.6);
+    }
+}

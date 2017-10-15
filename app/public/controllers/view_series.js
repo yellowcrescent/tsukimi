@@ -13,10 +13,146 @@
  * @param       vim: set ts=4 sw=4 noexpandtab syntax=javascript:
  *
  *****************************************************************************/
+/*jshint -W083 */
 
 let vidstatus = {};
 let mpv_sock = null;
 let mpv_event = null;
+
+const BadgeMap = {
+    af: {
+        'A_AAC': "tsk_af_aac",
+        'A_AC3': "tsk_af_ac3",
+        'A_EAC3': "tsk_af_eac3",
+        'A_DTS': "tsk_af_dts",
+        'A_DTSHD': "tsk_af_dtshd",  /* XXX-PLACEHOLDER: A_DTSHD doesn't exist */
+        'A_FLAC': "tsk_af_flac",
+        'A_MPEG': "tsk_af_mp3",
+        'A_OPUS': "tsk_af_opus",
+        'A_VORBIS': "tsk_af_vorbis",
+        /* Non-Matroska codecs */
+        'Vorbis': "tsk_af_vorbis",
+        'WMA': "tsk_af_wma"
+    },
+    ac: {
+        1: "tsk_ac_10mono",
+        2: "tsk_ac_20stereo",
+        3: "tsk_ac_20stereo",
+        4: "tsk_ac_40quad",
+        5: "tsk_ac_51chan",
+        6: "tsk_ac_51chan",
+        7: "tsk_ac_71chan",
+        8: "tsk_ac_71chan",
+        '5.1': "tsk_ac_51chan",
+        '7.1': "tsk_ac_71chan"
+    },
+    vf: {
+        'V_MPEG4/ISO/ASP': "tsk_vf_asp",
+        'V_MPEG4/ISO/AVC': "tsk_vf_h264",
+        'V_MPEGH/ISO/HEVC': "tsk_vf_h265",
+        'V_MPEG2': "tsk_vf_mpeg2",
+        'V_THEORA': "tsk_vf_theora",
+        'V_VP8': "tsk_vf_vp8",
+        'V_VP9': "tsk_vf_vp9",
+        'V_MS/VFW/FOURCC / XVID': "tsk_vf_asp",
+        'V_MS/VFW/FOURCC / DIVX': "tsk_vf_asp",
+        /*'V_PRORES': "tsk_vf_prores",*/
+        /*'V_REAL': "tsk_vf_real",*/
+        /* Non-Matroska codecs */
+        'VC-1': "tsk_vf_vc1",
+        'Theora': "tsk_vf_theora",
+        'DIVX': "tsk_vf_asp",
+        'XVID': "tsk_vf_asp",
+        'WMV2': "tsk_vf_wmv",
+        'RV': "tsk_vf_real"
+    },
+    vfp: {
+        'High 10@L5.1': "tsk_vfp_hi10p"
+    },
+    vasp: {
+        '1.25': "tsk_vasp_5_4",
+        '5:4': "tsk_vasp_5_4",
+        '1.33': "tsk_vasp_4_3",
+        '4:3': "tsk_vasp_4_3",
+        '1.76': "tsk_vasp_16_9",
+        '1.77': "tsk_vasp_16_9",
+        '1.78': "tsk_vasp_16_9",
+        '16:9': "tsk_vasp_16_9",
+        '2.33': "tsk_vasp_21_9",
+        '21:9': "tsk_vasp_21_9",
+        '2.39': "tsk_vasp_239_1"
+    },
+    res: {
+        240: "tsk_res_240",
+        244: "tsk_res_240",
+        376: "tsk_res_376",
+        400: "tsk_res_480", /* DVD anamorphic widescreen, re-scaled with correct AR */
+        401: "tsk_res_480", /* DVD anamorphic widescreen, re-scaled with correct AR */
+        402: "tsk_res_480", /* DVD anamorphic widescreen, re-scaled with correct AR */
+        403: "tsk_res_480", /* DVD anamorphic widescreen, re-scaled with correct AR */
+        404: "tsk_res_480", /* DVD anamorphic widescreen, re-scaled with correct AR */
+        405: "tsk_res_480", /* DVD anamorphic widescreen, re-scaled with correct AR */
+        477: "tsk_res_480",
+        478: "tsk_res_480",
+        479: "tsk_res_480",
+        480: "tsk_res_480",
+        574: "tsk_res_576",
+        575: "tsk_res_576",
+        576: "tsk_res_576",
+        716: "tsk_res_hd720",
+        717: "tsk_res_hd720",
+        718: "tsk_res_hd720",
+        719: "tsk_res_hd720",
+        720: "tsk_res_hd720",
+        1076: "tsk_res_hd1080",
+        1077: "tsk_res_hd1080",
+        1078: "tsk_res_hd1080",
+        1079: "tsk_res_hd1080",
+        1080: "tsk_res_hd1080",
+        1440: "tsk_res_hd1440",
+        1600: "tsk_res_4k1600",
+        1716: "tsk_res_4k1716",
+        2160: "tsk_res_4k2160"
+    },
+};
+
+function get_video_badges(vfile) {
+    // get video badges
+    var _ext = '.png';
+    var bads = [];
+    try {
+        if(vfile.mediainfo.video[0].format_profile in BadgeMap.vfp) {
+            bads.push([BadgeMap.vfp[vfile.mediainfo.video[0].format_profile] + _ext]);
+        }
+        if(vfile.mediainfo.video[0].codec_id in BadgeMap.vf) {
+            bads.push([BadgeMap.vf[vfile.mediainfo.video[0].codec_id] + _ext]);
+        }
+        if(vfile.mediainfo.video[0].height in BadgeMap.res) {
+            var prog = '';
+            if(vfile.mediainfo.video[0].height < 700) {
+                if(vfile.mediainfo.video[0].scan_type.toLowerCase() == 'interlaced') prog = 'i';
+                else prog = 'p';
+            }
+            bads.push([BadgeMap.res[vfile.mediainfo.video[0].height] + prog + _ext]);
+        }
+        if(vfile.mediainfo.video[0].display_aspect_ratio.substring(0,4) in BadgeMap.vasp) {
+            bads.push([BadgeMap.vasp[vfile.mediainfo.video[0].display_aspect_ratio.substring(0,4)] + _ext]);
+        }
+    } catch(e) {}
+
+    // get audio badges
+    try {
+        for(var tt in vfile.mediainfo.audio) {
+            var trk = vfile.mediainfo.audio[tt];
+            if(trk.codec_id in BadgeMap.af) {
+                bads.push([BadgeMap.af[trk.codec_id] + _ext, BadgeMap.ac[trk.channels] + _ext]);
+            }
+        }
+    } catch(e) {}
+
+    return bads;
+}
+
 
 function viewSeriesController($scope, $location, $routeParams, $http, $filter, $modal, $alert, $timeout) {
     console.log("viewSeriesController start");
@@ -80,8 +216,11 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
             vprofile: tfile.mediainfo.video[0].format_profile,
             atrack_count: tfile.mediainfo.audio.length,
             atracks: tfile.mediainfo.audio,
-            duration: `${vduration.hours() ? vduration.hours() + ':' : ''}${_.padStart(vduration.minutes(),2,'0')}:${_.padStart(vduration.seconds(),2,'0')}`
+            duration: `${vduration.hours() ? vduration.hours() + ':' : ''}${_.padStart(vduration.minutes(),2,'0')}:${_.padStart(vduration.seconds(),2,'0')}`,
+            badges: []
         };
+
+        $scope.infobox.badges = get_video_badges(tfile);
 
         // show infobox -- set display:fixed and trigger fade-in transition for opacity
         $('#infobox').show();
@@ -309,7 +448,7 @@ function viewSeriesController($scope, $location, $routeParams, $http, $filter, $
             if(istart || tep.id == `ep__${start_id}`) {
                 istart = true;
                 var epid = tep.id.split('ep__')[1];
-                var tvid = $scope.vidlist.filter(function(x) { return x._id == epid; })[0];
+                var tvid = $scope.vidlist.filter(function(x) { return x._id == epid; })[0]; /* jshint: ignore */
                 pfiles.push(tvid._files[tvid.sources[0].id].location[tvid._files[tvid.sources[0].id].default_location].fpath.real);
             }
         }

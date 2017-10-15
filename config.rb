@@ -30,6 +30,6 @@ output_style = :compact
 # Misc options
 line_comments = false
 preferred_syntax = :scss
-sourcemap = false
+sourcemap = true
 disable_warnings = true
 sass_options = { :cache => false }

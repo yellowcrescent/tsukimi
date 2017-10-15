@@ -1,5 +1,25 @@
 <!--routes/settings-->
-<div class="tsk-pgc">
-	<h2>settings route</h2>
+
+<div id="sidebar" class="tsk-ssidebar">
+    <h1>Settings</h1>
+    <ul class="nav">
+        <li><span class="fa fa-hashtag"></span> Group Setup</li>
+        <li><span class="fa fa-eyedropper"></span> Themes</li>
+        <li><span class="fa fa-play-circle-o"></span> Playback</li>
+        <li><span class="fa fa-desktop"></span> Display</li>
+        <li><span class="fa fa-keyboard-o"></span> Input</li>
+        <li><span class="fa fa-language"></span> Language &amp; Locale</li>
+        <div class="separator"></div>
+        <li><span class="fa fa-compass"></span> Discovery</li>
+        <li><span class="fa fa-retweet"></span> Scrapers</li>
+        <li><span class="fa fa-database"></span> Storage Backend</li>
+        <li><span class="fa fa-asterisk"></span> Network Service</li>
+        <li><span class="fa fa-download"></span> Auto-Updates</li>
+    </ul>
 </div>
-<!--//routes/settings-->
+
+<!-- include chosen settings page -->
+<div id="settings-viewport" ng-include src="view_template"></div>
+<!--// -->
+
+<!--//routes/settings ->

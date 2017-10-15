@@ -19,6 +19,7 @@
 @import "_transitions.scss";
 
 /*** Dimensions ***/
+$header_height:				60px;
 $sidebar_width:				320px;
 $lib_headroom:				102px;
 
@@ -58,6 +59,7 @@ $tg_fonts	:	(
 
 /*** Sub-styles ***/
 @import "_viewer.scss";
+@import "_settings.scss";
 
 /******************/
 

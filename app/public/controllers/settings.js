@@ -16,5 +16,13 @@
 
 function settingsController($scope, $location, $routeParams, $http) {
 	console.log("settingsController start");
+
+    var template_map = {
+        default: {url: 'views/settings/default.html'}
+    };
+
+    $scope.settings_page = 'default';
+    $scope.view_template = template_map[$scope.settings_page].url;
+
     hideSplash();
 }

@@ -251,8 +251,9 @@
         font-size: 48px;
         text-overflow: ellipsis;
         float: left;
-        clear: both;
-        width: 90%;
+        clear: left;
+        max-width: 50%;
+        max-height: 60px;
         text-shadow: 2px 2px 10px rgba(50, 50, 50, 0.5);
     }
 
@@ -262,7 +263,7 @@
         font-size: 48px;
         text-overflow: ellipsis;
         float: left;
-        clear: both;
+        clear: left;
         background: rgba(255,255,255,0.6);
         color: rgba(0,0,0,0.8);
         text-shadow: 2px 2px 10px rgba(50, 50, 50, 0.5);
@@ -277,7 +278,7 @@
         font-size: 36px;
         text-overflow: ellipsis;
         float: left;
-        width: 90%;
+        width: 50%;
         text-shadow: 2px 2px 10px rgba(50, 50, 50, 0.5);
         padding-top: 5px;
     }
@@ -286,7 +287,7 @@
         font-family: "PT Sans";
         font-size: 16px;
         float: left;
-        clear: both;
+        clear: left;
 
         &>div {
             margin: 0px 5px;
@@ -302,13 +303,36 @@
         font-size: 16px;
         overflow: hidden;
         float: left;
-        clear: both;
+        clear: left;
         width: 90%;
         height: 70px;
         margin: 25px 20px 15px 20px;
         text-overflow: ellipsis;
     }
 
+    &-badgebox {
+        float: right;
+        overflow: hidden;
+        max-width: 60%;
+        max-height: 90px;
+        zoom: 0.75;
+    }
+
+    &-badge {
+        float: left;
+        margin: 0px 8px;
+
+        &-img {
+            margin: 0px;
+            height: 96px;
+            filter: invert(100%) drop-shadow(2px 2px 4px rgba(220,220,220,0.3));
+        }
+
+        &-subtext {
+            margin-top: -15px;
+            text-align: center;
+        }
+    }
 }
 
 #bg {
