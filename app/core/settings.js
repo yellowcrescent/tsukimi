@@ -42,7 +42,15 @@ const defaults = {
         "music_video": "Music Video"
     },
     "scrapers": {
-        "repdelay": 500
+        "global": {
+            "repdelay": 500,
+        },
+        "tvdb": {},
+        "anidb": {
+            "series_title_lang": "main",
+            "episode_title_lang": "en",
+            "tvdb_supplement": true
+        }
     },
     "listen": {
         "port": 22022,

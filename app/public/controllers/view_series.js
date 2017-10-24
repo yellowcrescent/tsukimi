@@ -145,7 +145,7 @@ function get_video_badges(vfile) {
         for(var tt in vfile.mediainfo.audio) {
             var trk = vfile.mediainfo.audio[tt];
             if(trk.codec_id in BadgeMap.af) {
-                bads.push([BadgeMap.af[trk.codec_id] + _ext, BadgeMap.ac[trk.channels] + _ext]);
+                bads.push([BadgeMap.af[trk.codec_id] + _ext, BadgeMap.ac[parseInt(trk.channels)] + _ext]);
             }
         }
     } catch(e) {}
