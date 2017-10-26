@@ -429,39 +429,27 @@ function add_series_full(sname, indata, _cbx) {
 	// generate a new norm_id
 	var new_tdex = Scraper.normalize(sdata.ctitle);
 
-	// generate series_id
-	var tser_id = Scraper.mkid_series(new_tdex, sdata);
-
 	// set series data
-	var thisx = {
-					'_id': tser_id,
-					norm_id: new_tdex,
-					title: sdata.ctitle,
-					count: null,
-					genre: sdata.genre,
-					xrefs: sdata.xrefs,
-					tv: sdata.tv,
-					ctitle: sdata.ctitle,
-					synopsis: sdata.synopsis,
-					lastupdated: sdata.lastupdated,
-					artwork: sdata.artwork
-				};
+	sdata.norm_id = new_tdex;
+	sdata.title = sdata.ctitle;
+	sdata.count = null;
 
 	// process episode data
-	var eplist = [];
-	for(ti in indata.episodes) {
-		//var thisep = episode_schema_update(indata.episodes[ti], tser_id);
-		eplist.push(thisep);
-	}
-
+	var eplist = indata.episodes;
 	logthis.debug("eplist ready for insert", { eplist: eplist });
 
 	// insert series data into Mongo
-	monjer.collection('series').insert(thisx, function(err,rec) {
+	monjer.collection('series').update({ _id: sdata._id }, sdata, { upsert: true }, function(err,cnt,rec) {
 		if(!err) {
-			monjer.collection('episodes').insert(eplist, function(err,rec) {
+			var bulk = monjer.collection('episodes').initializeUnorderedBulkOp();
+
+			for(var tdex in eplist) {
+				bulk.find({ _id: eplist[tdex]._id }).upsert().replaceOne(eplist[tdex]);
+			}
+
+			bulk.execute(function(err, rdoc) {
 				if(!err) {
-					var xresp = { status: "ok", new_tdex: new_tdex, series_id: tser_id };
+					var xresp = { status: "ok", new_tdex: new_tdex, series_id: sdata._id };
 					logthis.verbose("Inserted series and episode data into Mongo successfully", xresp);
 					_cbx(xresp);
 				} else {

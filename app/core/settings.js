@@ -44,6 +44,7 @@ const defaults = {
     "scrapers": {
         "global": {
             "repdelay": 500,
+            "default_scraper": "tvdb"
         },
         "tvdb": {},
         "anidb": {

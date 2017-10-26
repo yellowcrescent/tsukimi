@@ -14,6 +14,8 @@
  *
  *****************************************************************************/
 
+'use strict';
+
 const request = require('request');
 const xml2js = require('xml2js');
 const _ = require('lodash');
@@ -68,7 +70,7 @@ class Scraper {
                 if(resp.statusCode == 200 && !err) {
                     if(resp.headers['content-type'].match(/^image/i)) {
                         var tobj = {
-                            _id: `${tart.source}_${tart.id}`,
+                            _id: `${tart.source}_${tart.id}_${serdata._id}`,
                             img: body.toString('base64'),
                             mimetype: resp.headers['content-type'],
                             imgtype: tart._ttype,
@@ -188,11 +190,37 @@ class Scraper {
             }
         }
 
-        logger.debug("Preparing to fetch images for %d episodes...", eplist.length);
-        _fetch_images(0, _cbx);
+        if(ilist.length) {
+            logger.debug("Preparing to fetch %d images...", ilist.length);
+            _fetch_images(0, _cbx);
+        } else {
+            logger.debug("No images to fetch");
+            _cbx([]);
+        }
     }
 
     /* Utility methods */
+    static get_available_scrapers() {
+        var slist = {};
+
+        for(var tfunc in exports) {
+            var tscrap;
+
+            if(tfunc.match(/^Scraper_/)) {
+                try {
+                    tscrap = exports[tfunc].describe();
+                    tscrap.class = exports[tfunc];
+                    slist[tscrap.name] = tscrap;
+                } catch(e) {
+                    logger.error("Failed to call static describe() function of %s. Scraper will not be available for use.", tfunc, e);
+                    continue;
+                }
+            }
+        }
+
+        return slist;
+    }
+
     static mkid_series(sid, xdata) {
         // create unique series ID with tdex_id + release year
         // if @sid (tdex_id) is not passed in, the corrected title
@@ -215,13 +243,24 @@ class Scraper {
     static mkid_episode(sid, xdata) {
         var isuf = (xdata.id || String(Date.now() / 1000000.0).split('.')[1]);
         var xepi = xdata.episode !== null ? String(xdata.episode) : String(xdata.episode_special);
-        return sid + "." + (String(xdata.season) || '0') + "." + (xepi || '0') + "." + isuf;
+        var xsea = (xdata.season == 0 && xdata.eptype.match(/(regular|special)/)) ? xdata.eptype : (xdata.season || '0');
+        return `${sid}.${xsea}.${xepi || '0'}.${isuf}`;
     }
 
     static mkid_video(serdata, epidata) {
         var isuf = (epidata.first_aired || String(Date.now() / 1000000.0).split('.')[1]);
-        return serdata._id + "." + (String(epidata.season) || '0') + "." + (String(epidata.episode) || '0') + "." + isuf;
+        var xepi = epidata.episode !== null ? String(epidata.episode) : String(epidata.episode_special);
+        var xsea = (epidata.season == 0 && epidata.eptype.match(/(regular|special)/)) ? epidata.eptype : (epidata.season || '0');
+        return `${serdata._id}.${xsea}.${xepi || '0'}.${isuf}`;
     }
+
+    /*
+    static mkid_video(serdata, epidata) {
+        var isuf = (epidata.first_aired || String(Date.now() / 1000000.0).split('.')[1]);
+        //return serdata._id + "." + (String(epidata.season) || '0') + "." + (String(epidata.episode) || '0') + "." + isuf;
+        return `${serdata._id}.${epidata.season || '0'}.${epidata.episode || '0'}.${isuf}`;
+    }
+    */
 
     static normalize(instr) {
         return instr.replace(/[ ★☆\.]/g,'_').replace(/['`\-\?!%&\*@\(\)#:,\/\\;\+=\[\]\{\}\$\<\>]/g,'').toLowerCase().trim();
@@ -264,7 +303,7 @@ class Scraper_tvdb extends Scraper {
         return {
                 name: "tvdb",
                 author: "J. Hipps <jacob@ycnrg.org>",
-                description: "TheTVDB.com",
+                description: "TheTVDB",
                 source_url: "https://www.thetvdb.com/",
                 logo: "https://ss.ycnrg.org/tvdb.png",
                 image_provider: ['poster', 'fanart', 'banner', 'season', 'episode']
@@ -305,12 +344,12 @@ class Scraper_tvdb extends Scraper {
     search_series(qseries, _cbx) {
         var _this = this;
 
-        this.auth(function(err) {
+        _this.auth(function(err) {
             if(!err) {
                 _this._request2({ uri: '/search/series', qs: { name: qseries }}, function(err,resp,body) {
                     if(resp.statusCode == 200) {
                         logger.debug2("got %d results from tvdb", body.data.length, { qseries: qseries, body: body });
-                        _cbx({ status: "ok", results: body.data });
+                        _cbx({ status: "ok", results: _this.normalize_search_results(body.data) });
                     } else if(resp.statusCode == 404) {
                         logger.debug("tvdb query returned 404 No Results", { qseries: qseries });
                         _cbx({ status: "ok", results: [] });
@@ -329,11 +368,30 @@ class Scraper_tvdb extends Scraper {
         });
     }
 
+    normalize_search_results(indata) {
+        var _this = this;
+        var odata = [];
+
+        for(var ii in indata) {
+            var idat = indata[ii];
+            var tout = {
+                source: 'tvdb',
+                id: idat.id,
+                title: idat.seriesName,
+                date: idat.firstAired,
+                prod: idat.network
+            };
+            odata.push(tout);
+        }
+
+        return odata;
+    }
+
     get_series(serid, _cbx) {
         var _this = this;
         logger.debug("fetching tvdb data for series ID '%s'", serid);
 
-        this._request({ uri: '/series/'+serid+'/all/en.xml' }, function(err,resp,body) {
+        this._request({ uri: '/series/'+serid+'/all/en.xml', encoding: 'utf8' }, function(err,resp,body) {
             if(resp.statusCode == 200) {
                 logger.debug("got series data from tvdb; parsing XML response");
                 // decode XML response
@@ -371,7 +429,7 @@ class Scraper_tvdb extends Scraper {
                         // get data from result
                         logger.debug2("raw decoded XML response", { result: result });
                         var blist = result.Banners.Banner;
-                        for(bi in blist) {
+                        for(var bi in blist) {
                             var bb = Scraper._fix_xml_result(blist[bi]);
                             var bantype = bb.BannerType.trim().toLowerCase();
                             var tart =  {
@@ -381,8 +439,8 @@ class Scraper_tvdb extends Scraper {
                                             default: false,
                                             selected: false,
                                             season: (bb.Season || '0'),
-                                            url: tvdb_banpath+'/'+bb.BannerPath,
-                                            thumb_url: (bb.ThumbnailPath ? tvdb_banpath+'/'+bb.ThumbnailPath : null),
+                                            url: _this._conf.banner_path+'/'+bb.BannerPath,
+                                            thumb_url: (bb.ThumbnailPath ? _this._conf.banner_path+'/'+bb.ThumbnailPath : null),
                                             path: bb.BannerPath,
                                             type2: bb.BannerType2
                                         };
@@ -413,6 +471,7 @@ class Scraper_tvdb extends Scraper {
     }
 
     tvdb_process(indata, _cbx) {
+        var _this = this;
         var outdata = {};
         var iser = Scraper._fix_xml_result(indata.Series[0]);
 
@@ -434,7 +493,7 @@ class Scraper_tvdb extends Scraper {
                     synopsis: {
                                 tvdb: iser.Overview
                               },
-                    status: (iser.Status || 'unknown'),
+                    status: (iser.Status || 'unknown').toLowerCase(),
                     fetched: parseInt(Date.now() / 1000)
                   };
 
@@ -443,8 +502,8 @@ class Scraper_tvdb extends Scraper {
 
         // get episodes
         txc.episodes = [];
-        for(tei in indata.Episode) {
-            txc.episodes[tei] = tvdb_episode_schema_update(Scraper._fix_xml_result(indata.Episode[tei]), txc._id);
+        for(var tei in indata.Episode) {
+            txc.episodes[tei] = _this.tvdb_episode_schema_update(Scraper._fix_xml_result(indata.Episode[tei]), txc._id);
         }
 
         // get banner defaults
@@ -517,7 +576,7 @@ class Scraper_tvdb extends Scraper {
     }
 }
 
-ADB_RESLUT = {
+const ADB_RESLUT = {
     1: "AnimeNewsNetwork",
     2: "MyAnimeList",
     3: "AnimeNFO",
@@ -541,7 +600,7 @@ ADB_RESLUT = {
     28: "crunchyroll"
 }
 
-ADB_EPTYPE = {
+const ADB_EPTYPE = {
     1: "regular",
     2: "special",
     3: "oped",
@@ -561,7 +620,8 @@ class Scraper_anidb extends Scraper {
                                  episode_title_lang: 'en',
                                  tvdb_supplement: true}, conf);
         this.auth_token = null;
-        this._request = request.defaults({baseUrl: `${this._conf.baseuri}`, qs: {client: 'tsukimi', clientver: '1', protover: '1'},
+        this._request = request.defaults({baseUrl: `${this._conf.baseuri}`, gzip: true,
+                                          qs: {client: 'tsukimi', clientver: '1', protover: '1'},
                                           headers: {'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)"}});
         this._sreq = request.defaults({baseUrl: "https://tsukimi.io/api", json: true,
                                        headers: {'User-Agent': "tsukimi/"+pkgdata.version+" (https://tsukimi.io/)"}});
@@ -585,10 +645,12 @@ class Scraper_anidb extends Scraper {
     }
 
     search_series(sername, _cbx) {
-        this._sreq({ uri: "/search/anime", qs: {series: sername} }, function(err, resp, body) {
+        var _this = this;
+
+        _this._sreq({ uri: "/search/anime", qs: {series: sername} }, function(err, resp, body) {
             if(resp.statusCode == 200) {
                 if(body.error == 'ok') {
-                    _cbx({ status: "ok", results: body.results });
+                    _cbx({ status: "ok", results: _this.normalize_search_results(body.results) });
                 } else {
                     _cbx({ status: "error", error: body.error });
                 }
@@ -597,6 +659,27 @@ class Scraper_anidb extends Scraper {
                 _cbx({ status: "error", error: "Server error: "+body });
             }
         });
+    }
+
+    normalize_search_results(indata) {
+        var _this = this;
+        var odata = [];
+
+        for(var ii in indata) {
+            var idat = indata[ii];
+            var tprod = null;
+            try { tprod = idat.xref.supplement.studio; } catch(e) {}
+            var tout = {
+                source: 'anidb',
+                id: idat._id,
+                title: idat.mtitle,
+                date: null,
+                prod: tprod
+            };
+            odata.push(tout);
+        }
+
+        return odata;
     }
 
     get_series(serid, _cbx) {
@@ -619,13 +702,14 @@ class Scraper_anidb extends Scraper {
                     xml2js.parseString(body, function(err, result) {
                         if(!err) {
                             // get data from result
-                            logger.debug2("raw decoded XML response", { result: result });
+                            logger.debug2("decoded XML response", result);
                             if(result.error) {
                                 logger.error("AniDB returned an error: %s", result.error);
                                 _cbx({ status: "error", error: result.error });
                                 return;
                             }
-                            var xdata = result.anime[0];
+                            var xdata = result.anime;
+                            logger.debug("Got series data from AniDB OK");
 
                             // get tvdb supplement (if enabled), then process for the final result
                             _this.get_tvdb_supplement(cordata.xref.tvdb, function(tdata) {
@@ -669,7 +753,9 @@ class Scraper_anidb extends Scraper {
 
     anidb_process(rdata, cdata, tdata, _cbx) {
         var _this = this;
-        var iser = Scraper._fix_xml_result(rdata.anime);
+        var iser = Scraper._fix_xml_result(rdata);
+
+        logger.debug("anidb_process: iser =", iser);
 
         // get main title
         var sertitle;
@@ -683,7 +769,7 @@ class Scraper_anidb extends Scraper {
         var astatus;
         if(iser.enddate) {
             if(Date.now() >= Date.parse(iser.enddate)) {
-                astatus = 'completed';
+                astatus = 'ended';
             } else if(Date.now() >= Date.parse(iser.startdate)) {
                 astatus = 'airing';
             } else {
@@ -699,6 +785,18 @@ class Scraper_anidb extends Scraper {
             astatus = 'unknown';
         }
 
+        // get studio
+        var tstudio;
+        try {
+            if(cdata.xref.supplement.studio) {
+                tstudio = cdata.xref.supplement.studio;
+            } else {
+                tstudio = iser.creators.name.filter(function(x) { return x.$.type == 'Animation Work'; }).map(function(x) { return x._; })[0] || null;
+            }
+        } catch(e) {
+            tstudio = null;
+        }
+
         // get key series data
         var txc = {
                     genre: iser.tags.tag.filter(function(x) { return parseInt(x.$.weight) >= 400; }).map(function(x) { return _.startCase(x.name[0]); }),
@@ -709,7 +807,7 @@ class Scraper_anidb extends Scraper {
                             anidb: iser.$.id
                            },
                     tv: {
-                            studio: iser.creators.name.filter(function(x) { return x.$.type == 'Animation Work'; }).map(function(x) { return x._; }),
+                            studio: tstudio,
                             debut: (parseInt(Date.parse(iser.startdate) / 1000) || null)
                         },
                     synopsis: {
@@ -745,17 +843,34 @@ class Scraper_anidb extends Scraper {
 
         // get episodes
         txc.episodes = [];
-        for(tei in iser.episodes.episode) {
+        for(var tei in iser.episodes.episode) {
             var tep = Scraper._fix_xml_result(iser.episodes.episode[tei]);
+            logger.debug("anidb_process: episode: tei = %d / tep =", tei, tep);
 
             // get episode title
             var eptit = null;
             try {
-                eptit = tep.title.filter(function(x) { return x.$['xml:lang'] == _this.conf.episode_title_lang; })[0]._;
+                if(tep.title.constructor == Array) {
+                    eptit = tep.title.filter(function(x) { return x.$['xml:lang'] == _this._conf.episode_title_lang; })[0]._;
+                } else {
+                    eptit = tep.title._;
+                }
             } catch(e) {
                 try {
                     eptit = tep.title[0]._;
                 } catch(ee) {}
+            }
+
+            // get alt title list
+            var titlist = [];
+            try {
+                if(tep.title.constructor == Array) {
+                    titlist = tep.title.map(function(x) { return {title: x._, lang: x.$['xml:lang'] } });
+                } else {
+                    titlist = [eptit];
+                }
+            } catch(e) {
+                titlist = [eptit];
             }
 
             // get season/ep number
@@ -778,10 +893,10 @@ class Scraper_anidb extends Scraper {
                 episode_absolute: null,
                 eptype: ADB_EPTYPE[parseInt(tep.epno.$.type)],
                 title: eptit,
-                alt_titles: tep.title.map(function(x) { return {title: x._, lang: x.$['xml:lang'] } }),
+                alt_titles: titlist,
                 first_aired: parseInt(Date.parse(tep.airdate) / 1000) || null,
-                lang: _this.conf.episode_title_lang,
-                lastupdated: parseInt(Date.now() / 1000),
+                lang: _this._conf.episode_title_lang,
+                lastupdated: parseInt(Date.parse(tep.$.update) / 1000) || parseInt(Date.now() / 1000),
                 people: {
                             director: [],
                             writers: [],
@@ -805,16 +920,26 @@ class Scraper_anidb extends Scraper {
                 // correlate AniDB episode to TVDb episode using correlation data
                 var tvid = _this.get_matching_tvdb_episode(tep.epno._, cdata);
                 var emat = tdata.episodes.filter(function(x) { return x.episode == tvid.episode && x.season == tvid.season; });
-                if(emat) {
+                if(emat.length) {
                     var tvdat = emat[0];
+                    logger.debug("Found matching TVDb episode for %s", tep.epno._, tvdat);
                     xdat.xref.tvdb = tvdat.xref.tvdb;
+                    xdat.xref.tvdb_season = tvdat.xref.tvdb_season;
+                    xdat.xref.tvdb_series = tvdat.xref.tvdb_series;
+                    if(tvdat.xref.imdb) xdat.xref.imdb = tvdat.xref.imdb;
+                    xdat.episode_absolute = tvdat.episode_absolute;
                     xdat.episode_map = {
                         tvdb: {season: tvid.season, episode: tvid.episode},
                         anidb: {season: epi_sea, episode: epi_num || tep.epno._}
                     };
                     xdat.people = tvdat.people;
-                    xdat.synopsis.tvdb = tvdat.synopsis.tvdb;
                     xdat.images = tvdat.images;
+                    xdat.synopsis.tvdb = tvdat.synopsis.tvdb;
+                    if(!xdat.synopsis.anidb) {
+                        xdat.default_synopsis = 'tvdb';
+                    }
+                } else {
+                    logger.debug("No matching TVDb episode for %s", tep.epno._);
                 }
             }
 
@@ -835,14 +960,21 @@ class Scraper_anidb extends Scraper {
         // handle specials (specials are season 0)
         if(anidb_episode === null) {
             anidb_episode = parseInt(epnum.slice(1)) || null;
-            anidb_season = 0;
+            if(epnum[0] == 'S') {
+                anidb_season = 0;
+            } else {
+                anidb_season = 99;
+            }
         }
 
         // set defaults if there are no mappings matched
-        tvdb_episode = anidb_episode + parseInt(cordat.episode_offset);
-        tvdb_season = parseInt(cordat.default_season);
+        tvdb_episode = anidb_episode + (parseInt(cordat.xref.episode_offset) || 0);
+        tvdb_season = parseInt(cordat.xref.default_season) || 1;
 
-        cordat.mapping.forEach(function(tmap) {
+        // loop through mappings and check if our episode needs to be remapped
+        for(var tii in cordat.xref.mapping) {
+            var tmap = cordat.xref.mapping[tii];
+
             if(parseInt(tmap.season_anidb) == anidb_season) {
                 if(tmap.maplist[String(anidb_episode)]) {
                     tvdb_episode = parseInt(tmap.maplist[String(anidb_episode)]);
@@ -854,13 +986,22 @@ class Scraper_anidb extends Scraper {
                     }
                 }
             }
-        });
+        }
 
+        logger.debug("get_matching_tvdb_episode: anidb %s (S%s/E%s) --> tvdb S%s/E%s (season def: %s / ep offset: %s)",
+                     epnum, anidb_season, anidb_episode, tvdb_season, tvdb_episode, cordat.xref.default_season, cordat.xref.episode_offset);
         return {season: tvdb_season, episode: tvdb_episode};
     }
 
     _strip_anidb_tags(instr) {
-        return instr.replace(/http:.+\[([^\]]+)\]/ig, '$1').replace(/\nSource:\s+.{3,32}$/, '');
+        var xo;
+        try {
+            xo = instr.replace(/http:.+\[([^\]]+)\]/ig, '$1').replace(/\nSource:\s+.{3,32}$/, '');
+        } catch(e) {
+            xo = null;
+            logger.debug("_strip_anidb_tags: got undefined string", e);
+        }
+        return xo;
     }
 }
 

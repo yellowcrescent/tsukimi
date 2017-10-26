@@ -12,11 +12,22 @@
             <label for="as_sersearch">Series Title</label>
             <div class="input-group">
               <input type="text" class="form-control" id="as_sersearch" ng-model="sersearch.qterm" />
-              <span class="input-group-btn">
-                <button id="as_serbtn" class="btn" type="submit" ng-click="ssmodal.search(sersearch.qterm)">
+              <div class="input-group-btn">
+                <button id="as_serbtn" class="btn" type="button" ng-click="ssmodal.search(sersearch.qterm)">
                   <i id="as_sericon" class="fa fa-search"></i>
                 </button>
-              </span>
+                <button type="button" class="btn dropdown-toggle" bs-dropdown data-placement="bottom-right" title="Scraper">
+                  <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li ng-repeat="tscrap in ssmodal.scraper_list">
+                    <a ng-click="ssmodal.scraperSelect(tscrap.name)">
+                      <i ng-show="tscrap.name == ssmodal.scraper_selected" class="fa fa-check"></i>
+                      <span ng-bind="tscrap.description"></span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
             <p class="help-block">Enter a series title to search, then choose a result below</p>
           </div>
@@ -26,10 +37,11 @@
             <table class="table tsk-asres-tab">
               <tbody>
                 <tr ng-repeat="tser in ssmodal.results track by tser.id" id="row_{{tser.id}}" class="tsk-tser-row" ng-class="{success: tser.exists}">
-                  <td><input type="radio" ng-model="sersearch.tvsel" ng-change="ssmodal.inputChange(tser.id)" ng-value="tser.id" ng-disabled="tser.exists" name="tvsel" id="tvsel_{{tser.id}}" /></td>
-                  <td ng-bind="tser.seriesName"></td>
-                  <td ng-bind="tser.firstAired"></td>
-                  <td ng-bind="tser.network"></td>
+                  <!-- <td><input type="radio" ng-model="sersearch.tvsel" ng-change="ssmodal.inputChange(tser.id)" ng-value="tser.id" ng-disabled="tser.exists" name="tvsel" id="tvsel_{{tser.id}}" /></td> -->
+                  <td><input type="radio" ng-model="sersearch.tvsel" ng-change="ssmodal.inputChange(tser.id)" ng-value="tser.id" name="tvsel" id="tvsel_{{tser.id}}" /></td>
+                  <td ng-bind="tser.title"></td>
+                  <td ng-bind="tser.date"></td>
+                  <td ng-bind="tser.prod"></td>
                 </tr>
               </tbody>
             </table>

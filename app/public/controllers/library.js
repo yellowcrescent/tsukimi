@@ -32,8 +32,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		$scope.flist = orderBy($scope.flist, pred, false);
 	};
 
-	// TODO: allow user to choose scraper
-	$scope.scraper = new tkcore.scrapers.Scraper_tvdb();
+	$scope.scraper_list = tkcore.scrapers.Scraper.get_available_scrapers();
 
 	// event listener for keyboard stuff
 	document.body.addEventListener('keydown', _lib_event_keydown);
@@ -397,6 +396,11 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 		$scope.ssmodal.inputIsValid = false;
 		$scope.ssmodal.results = [];
 
+		$scope.ssmodal.scraper_list = $scope.scraper_list;
+		$scope.ssmodal.scraper_selected = tkconfig.get('scrapers.global.default_scraper');
+		$scope.ssmodal.scraper_data = $scope.scraper_list[$scope.ssmodal.scraper_selected];
+		$scope.ssmodal.scraper = new $scope.ssmodal.scraper_data.class();
+
 		// set up 'save' callback
 		$scope.ssmodal.confirm = function(selected) {
 			logthis.debug("seriesSearch: selected source id = %s", selected);
@@ -405,7 +409,7 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 				$scope.modalWait = $modal({ title: "Retrieving Series Information...", templateUrl: `${pubpath}/views/partials/modal_wait.html`, scope: $scope, content: "Retrieving data from TheTVDb" });
 				$scope.modalWait.contentIcon = "fa-cog fa-spin";
 
-				$scope.scraper.get_series(selected, function(newdata) {
+				$scope.ssmodal.scraper.get_series(selected, function(newdata) {
 					if(newdata.status == "ok") {
 						// update modal text
 						$scope.modalWait.content = "Updating database";
@@ -439,14 +443,16 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 				$('#as_sericon').removeClass('fa-search');
 				$('#as_sericon').addClass('fa-refresh fa-spin');
 				$('#as_serbtn').prop('disabled', true);
-				$scope.scraper.search_series(sterm.trim(), function(res) {
+				$scope.ssmodal.scraper.search_series(sterm.trim(), function(res) {
 					// enable search button again
 					$('#as_sericon').removeClass('fa-refresh fa-spin');
 					$('#as_sericon').addClass('fa-search');
 					$('#as_serbtn').prop('disabled', false);
 					var tsdata = $.map($scope.serdata, function(x) { return x; });
 					for(ts in res.results) {
-						var frez = tsdata.filter(function(x) { return x.xrefs.tvdb == res.results[ts].id; });
+						var frez = tsdata.filter(function(x) {
+							return (x.xref || x.xrefs)[res.results[ts].source] == res.results[ts].id; // FIXME: xref -> xrefs
+						});
 						if(frez.length > 0) {
 							res.results[ts].exists = true;
 						} else {
@@ -483,6 +489,14 @@ function libraryController($scope, $location, $routeParams, $http, $filter, $mod
 			$scope.ssmodal.inputIsValid = true;
 			$('.tsk-tser-row').removeClass('info');
 			$('#row_'+selected).addClass('info');
+		};
+
+		$scope.ssmodal.scraperSelect = function(nscraper) {
+			if(nscraper != $scope.ssmodal.scraper_selected) {
+				$scope.ssmodal.scraper_selected = nscraper;
+				$scope.ssmodal.scraper_data = $scope.ssmodal.scraper_list[nscraper];
+				$scope.ssmodal.scraper = new $scope.ssmodal.scraper_data.class();
+			}
 		};
 
 	};
